@@ -34,7 +34,8 @@ public abstract class ATerm  implements Comparable<ATerm>{
 
     @Override
     public int hashCode() {
-        return getTerm().hashCode();
+        String toHash = this.getTerm();
+        return toHash.hashCode();
     }
 
     public int compareTo(ATerm other){

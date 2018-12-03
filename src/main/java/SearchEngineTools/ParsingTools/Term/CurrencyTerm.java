@@ -61,4 +61,8 @@ public class CurrencyTerm extends ATerm{
         String toReturn = s.toString();
         return toReturn.substring(0,lastNecessaryIndx+1);
     }
+
+    public void multiply(Value value){
+        numberTerm.multiply(value);
+    }
 }
