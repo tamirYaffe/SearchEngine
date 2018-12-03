@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane fx:id="allowStemming" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="View.ParseTest">
+   <children>
+      <Button fx:id="btn_Parse" layoutX="39.0" layoutY="24.0" mnemonicParsing="false" onAction="#parse" text="Parse" />
+      <CheckBox fx:id="CheckBox_AllowStemming" layoutX="117.0" layoutY="27.0" mnemonicParsing="false" onAction="#switchParser" text="Allow Steming" />
+      <TextArea fx:id="textArea_ToParse" layoutX="47.0" layoutY="101.0" prefHeight="277.0" prefWidth="219.0" />
+      <TextArea fx:id="textArea_Results" layoutX="338.0" layoutY="101.0" prefHeight="277.0" prefWidth="219.0" editable="false"/>
+   </children>
+</AnchorPane>
