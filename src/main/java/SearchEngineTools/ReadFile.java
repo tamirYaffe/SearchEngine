@@ -1,6 +1,7 @@
 package SearchEngineTools;
 
 import SearchEngineTools.ParsingTools.Parse;
+import SearchEngineTools.ParsingTools.ParseWithStemming;
 import SearchEngineTools.ParsingTools.Term.ATerm;
 import javafx.util.Pair;
 import sun.awt.Mutex;
@@ -20,6 +21,8 @@ public class ReadFile {
     private Parse parse;
     private Indexer indexer;
     private HashSet<String> stopWords = new HashSet<>();
+    private String corpusPath;
+    private String postingFilesPath;
 
     //for documents
     private List<String> documentsBuffer = new ArrayList<>();
@@ -29,17 +32,25 @@ public class ReadFile {
     private ConcurrentBuffer<Pair<Iterator<ATerm>, Integer>> PIBuffer = new ConcurrentBuffer<>(Integer.MAX_VALUE);
     private ConcurrentBuffer<Pair<List<String>, Integer>> RPBuffer = new ConcurrentBuffer<>(4);
     private Mutex mutex = new Mutex();
-    //    private ExecutorService threadPool=Executors.newCachedThreadPool();
-//    private ExecutorService threadPool = Executors.newFixedThreadPool(2);
-//    private ExecutorService threadPool=Executors.newWorkStealingPool();
     private List<Thread> threads=new ArrayList<>();
 
     public ReadFile() {
         parse = new Parse();
-        indexer = new Indexer(1048576 * 10);
+        indexer = new Indexer(1048576 * 10,"");
     }
 
-    public int listAllFiles(String path) {
+    public ReadFile(String corpusPath, String postingFilesPath, boolean useStemming) {
+        this.corpusPath=corpusPath;
+        this.postingFilesPath=postingFilesPath;
+        indexer = new Indexer(1048576 * 10,postingFilesPath);
+        if(useStemming)
+            parse = new ParseWithStemming();
+        else
+            parse=new Parse();
+    }
+
+    public int listAllFiles() {
+        String path=corpusPath;
         createStopWords(path);
         Document.corpusPath = path;
         startIndexThread();
@@ -101,7 +112,7 @@ public class ReadFile {
             Pair<List<String>, Integer> nextDoc = RPBuffer.get();
             if(nextDoc.getValue()==-1)
                 break;
-            Collection<ATerm> terms = parse.parseDocument(extractDocText(nextDoc.getKey()));
+            Collection<ATerm> terms = parse.parseDocument(nextDoc.getKey());
             PIBuffer.add(new Pair(terms.iterator(), nextDoc.getValue()));
             nextDoc.getKey().clear();
             //System.out.println("finish parse doc: " + nextDoc.getValue());
@@ -174,8 +185,6 @@ public class ReadFile {
         int numOfLinesInt = 0;
         int s = 0;
         for (String line : fileList) {
-//            if(numOfDocs>145)
-//                return;
             docLines.add(line);
             endLineNumInt++;
             numOfLinesInt++;
@@ -190,7 +199,7 @@ public class ReadFile {
                     docLinesClone.add(l);
                 RPBuffer.add(new Pair<>(docLinesClone, numOfDocs));
                 */
-                Collection<ATerm> terms = parse.parseDocument(extractDocText(docLines));
+                Collection<ATerm> terms = parse.parseDocument(docLines);
                 PIBuffer.add(new Pair(terms.iterator(), numOfDocs));
                 System.out.println("finish parse doc: " + numOfDocs);
                 startLineNumInt = endLineNumInt + 1;
@@ -243,10 +252,13 @@ public class ReadFile {
     }
 
     private void writeDocumentsToDisk() {
-        try (FileWriter fw = new FileWriter("Documents.txt", true);
+        String seperator="/";
+        String pathName=postingFilesPath+seperator+"Documents.txt";
+        File file = new File(pathName);
+        try (FileWriter fw = new FileWriter(file, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
             for (int i = 0; i < documentsBuffer.size(); i++) {
-                bw.write(documentsBuffer.get(0));
+                bw.write(documentsBuffer.get(i));
                 bw.newLine();
             }
         } catch (IOException e) {
