@@ -2,16 +2,16 @@ package SearchEngineTools.ParsingTools.Term;
 
 public class YearTerm extends ATerm {
 
-    private NumberTerm numberTerm;
-    private String year;
+    private int month;
+    private int year;
 
-    public YearTerm(NumberTerm numberTerm, String year){
-        this.numberTerm = numberTerm;
-        this.year = year;
+    public YearTerm(int month,int year){
+        this.month=month;
+        this.year=year;
     }
 
     @Override
     protected String createTerm() {
-        return numberTerm.createTerm() + year;
+        return year+"-"+month;
     }
 }

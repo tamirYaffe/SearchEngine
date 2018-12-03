@@ -25,14 +25,26 @@ public class NumberTerm extends ATerm{
         locationOfDecimal = Integer.MAX_VALUE;
         String number = removeCommas(s);
         //check if negative number
-        int firstDigit;
+        int firstDigit=0;
         if(s.charAt(0)=='-'){
             isNegative = true;
             firstDigit=1;
         }
+        else if(s.charAt(0)=='0'){
+            while (firstDigit<s.length() && s.charAt(firstDigit)=='0')
+                firstDigit++;
+            if(firstDigit==s.length()){
+                firstDigit=0;
+                s="0";
+                isNegative = false;
+                numberWithoutDecimal = new ArrayList<>(1);
+                numberWithoutDecimal.add('0');
+                containsDecimal=false;
+                return;
+            }
+        }
         else {
             isNegative = false;
-            firstDigit=0;
         }
         if(number.contains(".")){
             numberWithoutDecimal = new ArrayList<>(number.length()-1);
@@ -44,12 +56,13 @@ public class NumberTerm extends ATerm{
         }
         for (int i = firstDigit; i < number.length(); i++) {
             if(number.charAt(i)=='.') {
-                locationOfDecimal = i;
+                locationOfDecimal = numberWithoutDecimal.size();
             }
             else {
                 numberWithoutDecimal.add(number.charAt(i));
             }
         }
+
         this.term = null;
     }
 
@@ -156,7 +169,7 @@ public class NumberTerm extends ATerm{
 
     private String getValue(int locationOfDecimal){
         StringBuilder value = new StringBuilder();
-        int digitsToPrint = containsDecimal ? this.numberWithoutDecimal.size()+1 : this.numberWithoutDecimal.size();
+        int digitsToPrint = locationOfDecimal<=numberWithoutDecimal.size() ? this.numberWithoutDecimal.size()+1 : this.numberWithoutDecimal.size();
         boolean containsDecimal = false;
         for (int i = 0, j=0; i < digitsToPrint; i++) {
             if(i==locationOfDecimal){
@@ -167,6 +180,7 @@ public class NumberTerm extends ATerm{
                 value.append(this.numberWithoutDecimal.get(j));
                 j++;
             }
+
         }
         return containsDecimal ? removeUnnecessaryDigits(value.toString()) : value.toString();
     }

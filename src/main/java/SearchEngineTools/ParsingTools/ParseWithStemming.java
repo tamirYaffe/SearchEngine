@@ -1,9 +1,8 @@
 package SearchEngineTools.ParsingTools;
 
-import SearchEngineTools.ParsingTools.Term.ATerm;
 import SearchEngineTools.ParsingTools.Term.WordTerm;
 
-import java.util.*;
+import java.util.List;
 
 public class ParseWithStemming extends Parse {
 
@@ -20,21 +19,17 @@ public class ParseWithStemming extends Parse {
     }
 
     @Override
-    protected WordTerm createWordTerm(String s) {
-        if(stopWords.contains(s.toLowerCase()))
+    protected WordTerm createWordTerm(Token token) {
+        String tokenString = token.getTokenString();
+        boolean isStopWord = isStopWord(tokenString);
+        if(isStopWord)
             return null;
-        boolean isUpperCase = false;
-        for (int i = 0; i < s.length(); i++) {
-            if(Character.isLetter(s.charAt(i)) && Character.isUpperCase(s.charAt(i))){
-                isUpperCase = true;
-                break;
-            }
-        }
-        s = s.toLowerCase();
-        s = stemmer.stem(s);
+        boolean isUpperCase = Character.isUpperCase(tokenString.charAt(0));
+        tokenString = tokenString.toLowerCase();
+        tokenString = stemmer.stem(tokenString);
         if(isUpperCase)
-            s = s.toUpperCase();
-        return new WordTerm(s);
+            tokenString = tokenString.toUpperCase();
+        return new WordTerm(tokenString);
     }
 
     /*public Collection<ATerm> parseDocument(List<String> document){
