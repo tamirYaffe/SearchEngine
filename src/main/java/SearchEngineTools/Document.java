@@ -60,8 +60,11 @@ public class Document {
             max_tf=termOccurrences;
         numOfUniqeTerms++;
     }
-    public void writeDocInfoToDisk(){
-        try(FileWriter fw = new FileWriter("DocumentsInfo.txt", true);
+    public void writeDocInfoToDisk(String postingFilesPath){
+        String seperator="/";
+        String pathName=postingFilesPath+seperator+"DocumentsInfo.txt";
+        File file = new File(pathName);
+        try(FileWriter fw = new FileWriter(file, true);
             BufferedWriter bw = new BufferedWriter(fw);
             PrintWriter out = new PrintWriter(bw))
         {

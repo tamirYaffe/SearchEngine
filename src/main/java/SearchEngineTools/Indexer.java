@@ -23,6 +23,7 @@ public class Indexer {
     private int usedMemory;
     private int blockNum;
     private int termsNum;
+    private String postingFilesPath;
 
 
     public Indexer() {
@@ -36,14 +37,10 @@ public class Indexer {
         tempInvertedIndex = new LinkedHashMap<>();
     }
 
-    public Indexer(int memoryBlockSize) {
+    public Indexer(int memoryBlockSize,String postingFilesPath) {
         this();
         this.memoryBlockSize = memoryBlockSize;
-    }
-
-    public Indexer(int memoryBlockSize, int blockNum) {
-        this(memoryBlockSize);
-        this.blockNum=blockNum;
+        this.postingFilesPath=postingFilesPath;
     }
 
     public int getTermsNum() {
@@ -101,7 +98,7 @@ public class Indexer {
                 usedMemory = 0;
             }
         }
-        document.writeDocInfoToDisk();
+        document.writeDocInfoToDisk(postingFilesPath);
         //System.out.println("finish: " + docID);
     }
 
@@ -112,7 +109,10 @@ public class Indexer {
         BufferedReader[] readers = new BufferedReader[blockNum];
         PostingListComparator comparator=new PostingListComparator();
         PriorityQueue<Pair<String, Integer>> queue = new PriorityQueue<>(comparator);
-        FileWriter fw = new FileWriter("postingLists.txt",true);
+        String seperator="/";
+        String pathName=postingFilesPath+seperator+"postingLists.txt";
+        File file = new File(pathName);
+        FileWriter fw = new FileWriter(file,true);
         BufferedWriter bw = new BufferedWriter(fw);
         String curPostingList;
         List<String> bufferPostingLists=new ArrayList<>();
@@ -204,6 +204,7 @@ public class Indexer {
     }
 
     private void writeBufferPostingListsToDisk(BufferedWriter bw, List<String> bufferPostingLists) throws IOException {
+
         for(String postingList:bufferPostingLists){
             bw.write(postingList.substring(postingList.indexOf(";")+1));
 //            bw.write(postingList);
@@ -212,7 +213,10 @@ public class Indexer {
     }
 
     private void writeDictionaryToDisk() {
-        try (FileWriter fw = new FileWriter("dictionary.txt");
+        String seperator="/";
+        String pathName=postingFilesPath+seperator+"dictionary.txt";
+        File file = new File(pathName);
+        try (FileWriter fw = new FileWriter(file);
              BufferedWriter bw = new BufferedWriter(fw)) {
             for(Map.Entry entry: dictionary.entrySet()){
                 bw.write(entry.getKey()+" "+((Pair<Integer,Integer>)entry.getValue()).getKey()+" "+((Pair<Integer,Integer>)entry.getValue()).getValue());
