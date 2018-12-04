@@ -7,6 +7,7 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
@@ -73,8 +74,11 @@
                      </font>
                   </Button>
                </children>
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
             </HBox>
-            <HBox prefHeight="100.0" prefWidth="200.0">
+            <HBox prefHeight="49.0" prefWidth="600.0">
                <children>
                   <Button fx:id="btn_loadDictionary" mnemonicParsing="false" onAction="#onClickLoadDictionary" text="Load dictionary">
                      <HBox.margin>
@@ -88,20 +92,23 @@
                   </Button>
                </children>
                <VBox.margin>
-                  <Insets top="50.0" />
+                  <Insets top="10.0" />
                </VBox.margin>
             </HBox>
+            <Button fx:id="btn_deleteAll" mnemonicParsing="false" onAction="#onClickSDeleteAll" text="DELETE ALL">
+               <font>
+                  <Font name="Arial Bold" size="13.0" />
+               </font>
+               <VBox.margin>
+                  <Insets left="240.0" top="10.0" />
+               </VBox.margin>
+            </Button>
+            <TextArea fx:id="ta_showDictionary" prefHeight="400.0" prefWidth="200.0">
+               <VBox.margin>
+                  <Insets top="10.0" />
+               </VBox.margin>
+            </TextArea>
          </children>
       </VBox>
    </center>
-   <bottom>
-      <Button fx:id="btn_deleteAll" mnemonicParsing="false" onAction="#onClickSDeleteAll" text="DELETE ALL" BorderPane.alignment="CENTER">
-         <BorderPane.margin>
-            <Insets bottom="20.0" />
-         </BorderPane.margin>
-         <font>
-            <Font name="Arial Bold" size="13.0" />
-         </font>
-      </Button>
-   </bottom>
 </BorderPane>

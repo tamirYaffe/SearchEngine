@@ -1,19 +1,28 @@
 package View;
 
 import Controller.Controller;
+import SearchEngineTools.Indexer;
 import SearchEngineTools.ReadFile;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class View {
     private Controller m_controller;
     private Stage primaryStage;
+    private Indexer indexer;
+    private String fileSeparator=System.getProperty("file.separator");
+
 
     //fxml widgets
     public TextField tf_corpusPath;
@@ -25,10 +34,12 @@ public class View {
     public Button btn_loadDictionary;
     public Button btn_showDictionary;
     public Button btn_deleteAll;
+    public TextArea ta_showDictionary;
 
-    public void setParameters(Controller controller,Stage primaryStage) {
+    public void setParameters(Controller controller, Stage primaryStage, Indexer indexer) {
         this.m_controller=controller;
         this.primaryStage=primaryStage;
+        this.indexer=indexer;
     }
 
     public void onClickCorpusFileSystem(){
@@ -51,13 +62,18 @@ public class View {
     }
 
     public void onClickStartIndex(){
+        if(tf_corpusPath.getText()==null || tf_postingListPath.getText()==null){
+            showErrorMessege();
+            return;
+        }
         Thread thread=new Thread(()->{
             String corpusPath=tf_corpusPath.getText();
             String postingFilesPath=tf_postingListPath.getText();
             boolean useStemming=false;
             if(cb_useStemming.isSelected())
                 useStemming=true;
-            ReadFile readFile=new ReadFile(corpusPath,postingFilesPath,useStemming);
+            indexer.setPostingFilesPath(postingFilesPath);
+            ReadFile readFile=new ReadFile(indexer, corpusPath,postingFilesPath,useStemming);
             readFile.deletePrevFiles();
             long startTime = System.nanoTime();
             int numOfFiles=readFile.listAllFiles();
@@ -71,11 +87,44 @@ public class View {
         thread.start();
     }
 
-    public void onClickLoadDictionary(){
+    private void showErrorMessege() {
 
     }
 
+    public void onClickLoadDictionary(){
+        Map<String, Pair<Integer,Integer>> dictionary=new HashMap<>();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(tf_postingListPath.getText()+fileSeparator+"dictionary.txt"));
+            String line;
+            while (( line=reader.readLine())!=null){
+                dictionary.put(line.split(" ")[0],new Pair<>(Integer.valueOf(line.split(" ")[1]),Integer.valueOf(line.split(" ")[2])) );
+            }
+        } catch (IOException e) {
+            displayErrorMessage();
+        }
+        //load dictionary to index dictionary
+        indexer.setDictionary(dictionary);
+    }
+
+    private void displayErrorMessage() {
+    }
+
     public void onClickShowDictionary(){
+        for (int i = 0; i < 100; i++) {
+            ta_showDictionary.appendText("line: "+i);
+            ta_showDictionary.appendText(System.getProperty("line.separator"));
+        }
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(tf_postingListPath.getText()+fileSeparator+"dictionary.txt"));
+            String line;
+            while (( line=reader.readLine())!=null){
+                //dictionary.put(line.split(" ")[0],new Pair<>(Integer.valueOf(line.split(" ")[1]),Integer.valueOf(line.split(" ")[2])) );
+                //ta_showDictionary.appendText();
+                ta_showDictionary.appendText(System.getProperty("line.separator"));
+            }
+        } catch (IOException e) {
+            displayErrorMessage();
+        }
 
     }
 

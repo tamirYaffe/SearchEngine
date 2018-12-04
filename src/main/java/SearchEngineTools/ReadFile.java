@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.stream.Stream;
 
 public class ReadFile {
@@ -23,6 +22,7 @@ public class ReadFile {
     private HashSet<String> stopWords = new HashSet<>();
     private String corpusPath;
     private String postingFilesPath;
+    private String fileSeparator=System.getProperty("file.separator");
 
     //for documents
     private List<String> documentsBuffer = new ArrayList<>();
@@ -34,15 +34,10 @@ public class ReadFile {
     private Mutex mutex = new Mutex();
     private List<Thread> threads=new ArrayList<>();
 
-    public ReadFile() {
-        parse = new Parse();
-        indexer = new Indexer(1048576 * 10,"");
-    }
-
-    public ReadFile(String corpusPath, String postingFilesPath, boolean useStemming) {
+    public ReadFile(Indexer indexer, String corpusPath, String postingFilesPath, boolean useStemming) {
         this.corpusPath=corpusPath;
         this.postingFilesPath=postingFilesPath;
-        indexer = new Indexer(1048576 * 10,postingFilesPath);
+        this.indexer = indexer;
         if(useStemming)
             parse = new ParseWithStemming();
         else
@@ -70,18 +65,7 @@ public class ReadFile {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //stopping parse
-        /*
-        RPBuffer.add(new Pair<>(new ArrayList<String>(),-1));
-        RPBuffer.add(new Pair<>(new ArrayList<String>(),-1));
-        for(Thread t:threads) {
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        */
+
         writeDocumentsToDisk();
         System.out.println("stoping indexer");
         PIBuffer.add(new Pair<>(null, -1));
@@ -96,30 +80,6 @@ public class ReadFile {
         System.out.println("terms count:"+indexer.getTermsNum());
         System.out.println("Dictionary size: "+indexer.getDictionarySize());
         return numOfDocs;
-    }
-
-    private void startParseThreads() {
-        Thread parse1=new Thread(()-> runParse());
-        Thread parse2=new Thread(()-> runParse());
-        parse1.start();
-        parse2.start();
-        threads.add(parse1);
-        threads.add(parse2);
-    }
-
-    private void runParse() {
-        while (true){
-            Pair<List<String>, Integer> nextDoc = RPBuffer.get();
-            if(nextDoc.getValue()==-1)
-                break;
-            Collection<ATerm> terms = parse.parseDocument(nextDoc.getKey());
-            PIBuffer.add(new Pair(terms.iterator(), nextDoc.getValue()));
-            nextDoc.getKey().clear();
-            //System.out.println("finish parse doc: " + nextDoc.getValue());
-        }
-    }
-
-    private void writeRemainingDocuments() {
     }
 
     private void createStopWords(String path) {
@@ -141,7 +101,7 @@ public class ReadFile {
     }
 
 
-    private List<String> readContent(Path filePath) throws IOException {
+    private List<String> readContent(Path filePath){
 
         BufferedReader br = null;
         FileReader fr = null;
@@ -188,20 +148,11 @@ public class ReadFile {
             docLines.add(line);
             endLineNumInt++;
             numOfLinesInt++;
-            if (line.contains("<DOCNO>"))
-                docName = extractDocID(line);
             if (line.equals("</DOC>")) {
-                createDoc(filePath, startLineNumInt, numOfLinesInt, numOfDocs);
-                //startParseThread(docLines, numOfDocs);
-                /*
-                List<String> docLinesClone = new ArrayList<>();
-                for(String l:docLines)
-                    docLinesClone.add(l);
-                RPBuffer.add(new Pair<>(docLinesClone, numOfDocs));
-                */
+                createDoc(filePath, startLineNumInt, numOfLinesInt);
                 Collection<ATerm> terms = parse.parseDocument(docLines);
                 PIBuffer.add(new Pair(terms.iterator(), numOfDocs));
-                System.out.println("finish parse doc: " + numOfDocs);
+                //System.out.println("finish parse doc: " + numOfDocs);
                 startLineNumInt = endLineNumInt + 1;
                 numOfLinesInt = 0;
                 docLines.clear();
@@ -210,11 +161,6 @@ public class ReadFile {
             }
         }
 
-    }
-
-    private void startParseThread(List<String> doc, int docID) {
-        Runnable r = new MyRunnable(extractDocText(doc), docID);
-        //threadPool.execute(r);
     }
 
     private void startIndexThread() {
@@ -234,12 +180,7 @@ public class ReadFile {
 //        threadPool.execute(createIndex);
     }
 
-    private String extractDocID(String line) {
-        String ans = line.substring(7, line.length() - 8);
-        return ans;
-    }
-
-    private void createDoc(Path filePath, int startLineNum, int numOfLines, int docID) {
+    private void createDoc(Path filePath, int startLineNum, int numOfLines) {
         String fileName = extractFileName(filePath.toString());
         String documentLine = fileName + " " + startLineNum + " " + numOfLines;
         documentBufferSize += documentLine.length() + 1;
@@ -252,8 +193,7 @@ public class ReadFile {
     }
 
     private void writeDocumentsToDisk() {
-        String seperator="/";
-        String pathName=postingFilesPath+seperator+"Documents.txt";
+        String pathName=postingFilesPath+fileSeparator+"Documents.txt";
         File file = new File(pathName);
         try (FileWriter fw = new FileWriter(file, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
@@ -267,9 +207,9 @@ public class ReadFile {
     }
 
     private String extractFileName(String path) {
-//      return path.split("corpus")[1];
         String[] splitPath;
         String fileName;
+        /*
         if (path.contains("\\")) {
             splitPath = path.split("\\\\");
             fileName = "\\" + splitPath[splitPath.length - 1] + "\\" + splitPath[splitPath.length - 2];
@@ -277,6 +217,9 @@ public class ReadFile {
             splitPath = path.split("/");
             fileName = "/" + splitPath[splitPath.length - 1] + "/" + splitPath[splitPath.length - 2];
         }
+        */
+        splitPath = path.split(fileSeparator);
+        fileName = "/" + splitPath[splitPath.length - 1] + "/" + splitPath[splitPath.length - 2];
         return fileName;
     }
 
@@ -338,18 +281,6 @@ public class ReadFile {
         return fileText;
     }
 
-    public List<String> extractDocCity(List<String> lineList) {
-        for (int i = 0; i < lineList.size(); i++) {
-            String line = lineList.get(i);
-            if (line.contains("<F P=104>")) {
-                line = line.split(">")[1];
-                if (!line.equals(""))
-                    System.out.println(line.substring(2).split(" ")[0] + " " + line.substring(2).split(" ")[1]);
-            }
-        }
-        return null;
-    }
-
     private void readStopWords(File filePath) {
         BufferedReader br = null;
         FileReader fr = null;
@@ -383,23 +314,6 @@ public class ReadFile {
         }
     }
 
-
-    /////runnable class for multithreading the parse
-    public class MyRunnable implements Runnable {
-        private List<String> doc;
-        private int docID;
-
-        public MyRunnable(List<String> doc, int docID) {
-            this.docID = docID;
-            this.doc = doc;
-        }
-
-        public void run() {
-            Collection<ATerm> terms = parse.parseDocument(doc);
-            PIBuffer.add(new Pair(terms.iterator(), docID));
-            System.out.println("finish parse doc: " + docID);
-        }
-    }
 }
 
 
