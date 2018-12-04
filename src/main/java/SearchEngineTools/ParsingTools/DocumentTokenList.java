@@ -1,5 +1,9 @@
 package SearchEngineTools.ParsingTools;
 
+import SearchEngineTools.ParsingTools.Term.CityTerm;
+import eu.fayder.restcountries.v1.domain.Country;
+import eu.fayder.restcountries.v1.rest.CountryService;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -8,11 +12,13 @@ public class DocumentTokenList implements ITokenList {
 
     private Token next;
     private int wordCount;
-    private String currentLine;
-    private List<String> documentLines;
+    protected String currentLine;
+    protected List<String> documentLines;
     private List<Token> prepended;
     private List<Token> appended;
     private boolean isText;
+    private CityTerm cityTerm;
+    private CountryService countryService = CountryService.getInstance();
 
     Collection<Character> delimitersToSplitWordBy;
 
@@ -77,17 +83,22 @@ public class DocumentTokenList implements ITokenList {
             tokenString = removeUnnecessaryChars(currentLine.substring(0,indexOfFirstSpace));
             currentLine = indexOfFirstSpace>=currentLine.length() ? getNextTextLine() : currentLine.substring(indexOfFirstSpace+1);
         }
-        wordCount++;
-        return tokenString==null ? null : new Token(tokenString,wordCount-1);
+        Token toReturn = null;
+        if(tokenString!=null){
+            toReturn = new Token(tokenString,wordCount);
+            wordCount++;
+        }
+        return toReturn;
     }
 
-    private String getNextTextLine() {
+    protected String getNextTextLine() {
+
         if(isText){
             currentLine = documentLines.remove(0);
             if(currentLine.equals("</TEXT>")){
                 isText = false;
-                wordCount++;
-                return getNextTextLine();
+                String nextLine = getNextTextLine();
+                return nextLine;
             }
             else
                 return currentLine;
@@ -95,14 +106,49 @@ public class DocumentTokenList implements ITokenList {
         else {
             while (!documentLines.isEmpty() && !isText){
                 currentLine = documentLines.remove(0);
+                if(currentLine.contains("<F P=104>")) {
+                    extractCityTerm(currentLine);
+                    continue;
+                }
                 if(currentLine.equals("<TEXT>")) {
                     isText = true;
-                    wordCount++;
                     return getNextTextLine();
                 }
             }
         }
         return null;
+    }
+
+    private void extractCityTerm(String currentLine) {
+        String lineWithoutTag = currentLine.length()>=10 ? currentLine.substring(9) : null;
+        if(lineWithoutTag==null)
+            return;
+        String[] splitLineWithoutTag = lineWithoutTag.split(" ");
+        String cityName="";
+        boolean foundCity = false;
+        String lastCityName = null;
+        Country lastCountry = null;
+        int usedAPI = 0;
+        for (int i = 0; i < splitLineWithoutTag.length & usedAPI<3; i++) {
+            String currentIndexString = splitLineWithoutTag[i];
+            if(currentIndexString!=null && currentIndexString.length()>0){
+                cityName += currentIndexString;
+                List<Country> country = countryService.getByCapital(cityName);
+                usedAPI++;
+                if(country!=null && !country.isEmpty()) {
+                    lastCityName=cityName;
+                    lastCountry=country.get(0);
+                    foundCity=true;
+                    cityName+=" ";
+                }
+                else {
+                    cityName+=" ";
+                }
+            }
+        }
+        if(foundCity){
+            cityTerm = new CityTerm(lastCityName,lastCountry);
+        }
     }
 
     @Override
@@ -148,6 +194,7 @@ public class DocumentTokenList implements ITokenList {
         this.wordCount=0;
         this.isText=false;
         this.documentLines=null;
+        this.cityTerm=null;
     }
 
     @Override
@@ -216,5 +263,9 @@ public class DocumentTokenList implements ITokenList {
         if(sToken.length()>=2 && sToken.substring(sToken.length()-2,sToken.length()).equals("'s"))
             sToken = sToken.substring(0,sToken.length()-2);
         return sToken.length()>0 ? sToken : null;
+    }
+
+    public CityTerm getCityTerm() {
+        return cityTerm;
     }
 }

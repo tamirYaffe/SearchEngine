@@ -7,6 +7,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -48,27 +49,26 @@ public class View {
     }
 
     public void onClickCorpusFileSystem(){
+        actionAllButtons(true);
         String selectedDirectory=openFileSystem();
         if(selectedDirectory!=null)
             tf_corpusPath.setText(selectedDirectory);
+        actionAllButtons(false);
     }
 
     public void onClickPostingListFileSystem(){
+        actionAllButtons(true);
         String selectedDirectory=openFileSystem();
         if(selectedDirectory!=null)
             tf_postingListPath.setText(selectedDirectory);
-    }
-
-    private String openFileSystem(){
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        File selectedDirectory =
-                directoryChooser.showDialog(primaryStage);
-        return selectedDirectory.getAbsolutePath();
+        actionAllButtons(false);
     }
 
     public void onClickStartIndex(){
-        if(tf_corpusPath.getText()==null || tf_postingListPath.getText()==null){
-            displayErrorMessage("");
+        actionAllButtons(true);
+        if(tf_corpusPath.getText().length()==0 || tf_postingListPath.getText().length()==0){
+            displayErrorMessage("Add path to input corpus and output posting files");
+            actionAllButtons(false);
             return;
         }
         Thread thread=new Thread(()->{
@@ -90,9 +90,16 @@ public class View {
             System.out.println(numOfFiles);
         });
         thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        actionAllButtons(false);
     }
 
     public void onClickLoadDictionary(){
+        actionAllButtons(true);
         Map<String, Pair<Integer,Integer>> dictionary=new HashMap<>();
         int postingListPointer=0;
         try {
@@ -102,14 +109,16 @@ public class View {
                 dictionary.put(line.split(":")[0],new Pair<>(Integer.valueOf(line.split(":")[1]),postingListPointer++));
             }
         } catch (IOException e) {
-            displayErrorMessage("");
+            displayErrorMessage("load failed");
         }
         //load dictionary to index dictionary
         indexer.setDictionary(dictionary);
         System.out.println("dictionary lodad");
+        actionAllButtons(false);
     }
 
     public void onClickShowDictionary(){
+        actionAllButtons(true);
         try {
             String fileName=tf_postingListPath.getText()+fileSeparator+"dictionary.txt";
             BufferedReader reader = new BufferedReader(new FileReader(fileName));
@@ -125,24 +134,42 @@ public class View {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
+        actionAllButtons(false);
     }
 
     public void onClickSDeleteAll(){
+        actionAllButtons(true);
         System.out.println(indexer.getDictionarySize());
         indexer.clear();
         //readFile.clear();
         System.out.println(indexer.getDictionarySize());
+        actionAllButtons(false);
     }
 
-    private void disableAllButtons(){
-        btn_corpusFileSystem.setDisable(false);
-        btn_deleteAll.setDisable(false);
-        btn_loadDictionary.setDisable(false);
+    private String openFileSystem(){
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        File selectedDirectory =
+                directoryChooser.showDialog(primaryStage);
+        if(selectedDirectory==null)
+            return null;
+        return selectedDirectory.getAbsolutePath();
+    }
+
+    private void actionAllButtons(boolean disable){
+        btn_corpusFileSystem.setDisable(disable);
+        btn_postingListFileSystem.setDisable(disable);
+        btn_deleteAll.setDisable(disable);
+        btn_loadDictionary.setDisable(disable);
+        btn_showDictionary.setDisable(disable);
+        btn_startIndex.setDisable(disable);
     }
 
     private void displayErrorMessage(String msg) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error Dialog");
+        alert.setHeaderText("Ooops, there was an error!");
+        alert.setContentText(msg);
+        alert.showAndWait();
     }
 
 }

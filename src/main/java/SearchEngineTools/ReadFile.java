@@ -72,10 +72,10 @@ public class ReadFile {
         PIBuffer.add(new Pair<>(null, -1));
         //write remaining posting lists to disk
         mutex.lock();
-        indexer.sortAndWriteInvertedIndexToDisk();
         try {
+            indexer.sortAndWriteInvertedIndexToDisk();
             indexer.mergeBlocks();
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
         System.out.println("terms count:" + indexer.getTermsNum());

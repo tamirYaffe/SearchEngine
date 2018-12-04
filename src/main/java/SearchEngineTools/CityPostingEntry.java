@@ -1,15 +1,18 @@
 package SearchEngineTools;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CityPostingEntry {
     private int docID;
     private List<String> positions;
 
-    public CityPostingEntry(int docID,List<Integer>positions){
+    public CityPostingEntry(int docID, List<Integer>positions){
         this.docID=docID;
-        for(int position:positions)
+        this.positions=new ArrayList<>();
+        for(int position:positions){
             this.positions.add(0,""+position);
+        }
     }
     public int compareTo(CityPostingEntry other){
         return this.docID-other.docID;
