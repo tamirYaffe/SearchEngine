@@ -19,7 +19,7 @@ public class Main extends Application {
         primaryStage.setTitle("Search Engine");
         FXMLLoader fxmlLoader = new FXMLLoader();
         Parent root = fxmlLoader.load(getClass().getResource("/View.fxml").openStream());
-        Scene scene = new Scene(root, 800, 800);
+        Scene scene = new Scene(root, 500, 400);
         primaryStage.setScene(scene);
         //--------------
         View view = fxmlLoader.getController();

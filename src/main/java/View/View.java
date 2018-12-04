@@ -4,14 +4,17 @@ import Controller.Controller;
 import SearchEngineTools.Indexer;
 import SearchEngineTools.ReadFile;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import javax.swing.*;
+import java.awt.*;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +23,7 @@ import java.util.Map;
 public class View {
     private Controller m_controller;
     private Stage primaryStage;
+    private ReadFile readFile;
     private Indexer indexer;
     private String fileSeparator=System.getProperty("file.separator");
 
@@ -34,7 +38,8 @@ public class View {
     public Button btn_loadDictionary;
     public Button btn_showDictionary;
     public Button btn_deleteAll;
-    public TextArea ta_showDictionary;
+    public HBox hbox_bottom;
+    public JTextArea jTextArea;
 
     public void setParameters(Controller controller, Stage primaryStage, Indexer indexer) {
         this.m_controller=controller;
@@ -63,7 +68,7 @@ public class View {
 
     public void onClickStartIndex(){
         if(tf_corpusPath.getText()==null || tf_postingListPath.getText()==null){
-            showErrorMessege();
+            displayErrorMessage("");
             return;
         }
         Thread thread=new Thread(()->{
@@ -73,7 +78,7 @@ public class View {
             if(cb_useStemming.isSelected())
                 useStemming=true;
             indexer.setPostingFilesPath(postingFilesPath);
-            ReadFile readFile=new ReadFile(indexer, corpusPath,postingFilesPath,useStemming);
+            readFile=new ReadFile(indexer, corpusPath,postingFilesPath,useStemming);
             readFile.deletePrevFiles();
             long startTime = System.nanoTime();
             int numOfFiles=readFile.listAllFiles();
@@ -87,49 +92,57 @@ public class View {
         thread.start();
     }
 
-    private void showErrorMessege() {
-
-    }
-
     public void onClickLoadDictionary(){
         Map<String, Pair<Integer,Integer>> dictionary=new HashMap<>();
+        int postingListPointer=0;
         try {
             BufferedReader reader = new BufferedReader(new FileReader(tf_postingListPath.getText()+fileSeparator+"dictionary.txt"));
             String line;
             while (( line=reader.readLine())!=null){
-                dictionary.put(line.split(" ")[0],new Pair<>(Integer.valueOf(line.split(" ")[1]),Integer.valueOf(line.split(" ")[2])) );
+                dictionary.put(line.split(":")[0],new Pair<>(Integer.valueOf(line.split(":")[1]),postingListPointer++));
             }
         } catch (IOException e) {
-            displayErrorMessage();
+            displayErrorMessage("");
         }
         //load dictionary to index dictionary
         indexer.setDictionary(dictionary);
-    }
-
-    private void displayErrorMessage() {
+        System.out.println("dictionary lodad");
     }
 
     public void onClickShowDictionary(){
-        for (int i = 0; i < 100; i++) {
-            ta_showDictionary.appendText("line: "+i);
-            ta_showDictionary.appendText(System.getProperty("line.separator"));
-        }
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(tf_postingListPath.getText()+fileSeparator+"dictionary.txt"));
-            String line;
-            while (( line=reader.readLine())!=null){
-                //dictionary.put(line.split(" ")[0],new Pair<>(Integer.valueOf(line.split(" ")[1]),Integer.valueOf(line.split(" ")[2])) );
-                //ta_showDictionary.appendText();
-                ta_showDictionary.appendText(System.getProperty("line.separator"));
-            }
+            String fileName=tf_postingListPath.getText()+fileSeparator+"dictionary.txt";
+            BufferedReader reader = new BufferedReader(new FileReader(fileName));
+            jTextArea=new JTextArea();
+            jTextArea.read(reader,null);
+            JFrame frame = new JFrame("TextArea Load");
+            frame.getContentPane().add( new JScrollPane(jTextArea));
+            frame.pack();
+            frame.setLocationRelativeTo( null );
+            frame.setVisible(true);
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
         } catch (IOException e) {
-            displayErrorMessage();
+            e.printStackTrace();
         }
+
 
     }
 
     public void onClickSDeleteAll(){
+        System.out.println(indexer.getDictionarySize());
+        indexer.clear();
+        //readFile.clear();
+        System.out.println(indexer.getDictionarySize());
+    }
 
+    private void disableAllButtons(){
+        btn_corpusFileSystem.setDisable(false);
+        btn_deleteAll.setDisable(false);
+        btn_loadDictionary.setDisable(false);
+    }
+
+    private void displayErrorMessage(String msg) {
     }
 
 }
