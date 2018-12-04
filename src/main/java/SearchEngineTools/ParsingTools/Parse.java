@@ -45,7 +45,7 @@ public class Parse {
 
     private Collection<Character> delimitersToSplitWordBy;
 
-    private Collection<String> cityNames;
+    private ParsingHashMap cityNames;
 
     //private static CountryService countryService = CountryService.getInstance();
 
@@ -190,77 +190,46 @@ public class Parse {
         currencySymbols.add('$');
     }
 
-
-
     /////////////////////////////////////////////
-
-    /*private class OccurrencesListPair{
-
-        private ATerm term;
-        private int occurrences;
-
-        OccurrencesListPair(ATerm term, int occurrences){
-            this.term=term;
-            this.occurrences=occurrences;
-        }
-
-        void addOccurrences(int occurrencesToAdd){
-            occurrences+=occurrencesToAdd;
-        }
-
-        void setOccurrences(int occurrences){
-            this.occurrences=occurrences;
-        }
-
-        public int getOccurrences() {
-            return occurrences;
-        }
-
-        public ATerm getTerm(){
-            return term;
-        }
-
-        public void setTerm(ATerm term){
-            this.term=term;
-        }
-    }*/
 
     public Collection<ATerm> parseDocument(List<String> document){
         if(tokenList==null)
             tokenList = new DocumentTokenList();
         tokenList.initialize(document,currencySymbols,delimitersToSplitWordBy);
         List<String> cityNames = new ArrayList<>();
-        /*CityTerm documentCity = tokenList.getCityTerm();
-        if(documentCity!=null)
-            cityNames.add(documentCity.getTerm());*/
+        CityTerm documentCity = tokenList.getCityTerm();
+        Map<String,ATerm> occurrencesAndPositionsOfTerms = new HashMap<>();
+        if(documentCity!=null) {
+            cityNames.add(documentCity.getTerm());
+            occurrencesAndPositionsOfTerms.put(documentCity.getTerm(),documentCity);
+        }
         setCityNames(cityNames);
-        return parse(tokenList);
+        Collection<ATerm> toReturn = parse(tokenList,occurrencesAndPositionsOfTerms);
+        tokenList.clear();
+        this.cityNames=null;
+        return toReturn;
 
     }
 
     public Collection<ATerm> parseText(List<String> text){
-        ITokenList tokenList = tokenizeText(text);
+        ITokenList tokenList = new TextTokenList();
+        cityNames=new ParsingHashMap();
+        tokenList.initialize(text,currencySymbols,delimitersToSplitWordBy);
         return parse(tokenList);
     }
 
-    private ITokenList tokenizeText(List<String> text){
-        List<String> newText = new ArrayList<>(text.size());
-        for (int i = 0; i < text.size(); i++) {
-            String s = text.get(i);
-            String[] split = s.split(" ");
-            for (int j = 0; j < split.length; j++) {
-                newText.add(split[j]);
-            }
-        }
-        return new StringListAsTokenList(newText);
-    }
     public Collection<ATerm> parse(ITokenList tokenList){
         //Map<ATerm,OccurrencesListPair> occurrencesOfTerms = new HashMap<>();
         Map<String,ATerm> occurrencesAndPositionsOfTerms = new HashMap<>();
+        return parse(tokenList,occurrencesAndPositionsOfTerms);
+    }
+
+    private Collection<ATerm> parse(ITokenList tokenList, Map<String,ATerm> occurrencesAndPositionsOfTerms){
         addAllTermsToOccurrancesOfTerms(occurrencesAndPositionsOfTerms,tokenList);
         Collection<ATerm> toReturn = getFinalTermCollection(occurrencesAndPositionsOfTerms);
         return toReturn;
     }
+
 
     private Collection<ATerm> getFinalTermCollection(Map<String, ATerm> occurrencesOfTerms) {
         ArrayList<ATerm> toReturn = new ArrayList<>(occurrencesOfTerms.size());
@@ -269,11 +238,6 @@ public class Parse {
             toReturn.add(term);
         }
         return toReturn;
-        /*for (ATerm term:occurrencesOfTerms.keySet()) {
-            term = occurrencesOfTerms.get(term).getTerm();
-            term.setOccurrences(occurrencesOfTerms.get(term).occurrences);
-        }
-        return occurrencesOfTerms.keySet();*/
     }
 
     private void addAllTermsToOccurrancesOfTerms(Map<String, ATerm> occurrencesOfTerms, ITokenList tokenList) {
@@ -515,16 +479,6 @@ public class Parse {
         }
     }
 
-    /*private void addCityTermToOccurrencesList(CityTerm term, Map<String, ATerm> occurrencesOfTerms, boolean isLowerCase) {
-        if (occurrencesOfTerms.keySet().contains(term)){
-            OccurrencesListPair occurrencesListPair = occurrencesOfTerms.get(term);
-            CityTerm cityTerm = (CityTerm) occurrencesListPair.getTerm();
-            int occurrencesToAdd = term.getOccurrences()+1;
-            occurrencesListPair.addOccurrences(occurrencesToAdd);
-        }
-        else
-            occurrencesOfTerms.put(term,new OccurrencesListPair(term,1));
-    }*/
 
     private void addWordTerm(ITokenList tokens, Token token, Map<String, ATerm> occurrencesOfTerms){
         ATerm nextTerm = null;
@@ -539,12 +493,6 @@ public class Parse {
         else if(isCurrency(tokenString)){
             nextTerm = getCurrencyTerm(tokenString,tokens);
             //check if next is value
-            /*Token nextToken = tokens.isEmpty()?null : tokens.peek();
-            String nextTokenString = nextToken==null ? null : nextToken.getTokenString();
-            if(nextTokenString!=null && valuesAfterNumber.keySet().contains(nextTokenString)){
-                ((CurrencyTerm)nextTerm).multiply(valuesAfterNumber.get(nextTokenString));
-                tokens.pop();
-            }*/
             addTermToOccurrencesList(nextTerm,occurrencesOfTerms);
             return;
         }
@@ -614,6 +562,10 @@ public class Parse {
             addTermToOccurrencesList(nextTerm,occurrencesOfTerms);
             return;
         }
+        //check city
+        boolean isCity = createCityTerm(token,occurrencesOfTerms,tokens);
+        if(isCity)
+            return;
 
         //split word by non numbers and letter
         List<ATerm> toAdd = getFinalWordTermList(token,tokens);
@@ -622,6 +574,11 @@ public class Parse {
         }
         return;
     }
+
+    private boolean isCity(Token token) {
+        return cityNames.keySet().contains(token.getTokenString());
+    }
+
 
     private PercentageTerm getPercentageTerm(String s){
         if(isPercentage(s)){
@@ -703,18 +660,37 @@ public class Parse {
     }
 
     protected WordTerm createWordTerm(Token token) {
-        /*boolean isCityTerm = cityNames!=null && cityNames.contains(token.getTokenString());
-        if(isCityTerm){
-            return createCityTerm(token);
-        }*/
         boolean isStopWord = isStopWord(token.getTokenString());
         if(!isStopWord)
             return new WordTerm(token.getTokenString());
         return null;
     }
 
-    private CityTerm createCityTerm(Token token) {
-        return new CityTerm(token.getTokenString(),token.getPosition());
+    private boolean createCityTerm(Token token,Map<String, ATerm> occurrencesOfTerms,ITokenList tokenList) {
+        Collection<String> cityTerms = cityNames.keySet();
+        int longestTerm = cityNames.getWordsInLongestKey();
+        List<Token> toPrepend = new ArrayList<>();
+        String cityName=token.getTokenString();
+        boolean foundCityTerm = cityTerms.contains(cityName);
+        for (int i = 0; i < longestTerm && !foundCityTerm && !tokenList.isEmpty(); i++) {
+            Token t = tokenList.pop();
+            cityName += " "+t.getTokenString();
+            foundCityTerm = cityTerms.contains(cityName);
+            toPrepend.add(t);
+        }
+        if(foundCityTerm){
+            addCityToOccurenceList(cityName,token.getPosition(),occurrencesOfTerms);
+            return true;
+        }
+        else
+            tokenList.prependValidTokens(toPrepend);
+        return false;
+    }
+
+    private void addCityToOccurenceList(String cityName, int position, Map<String, ATerm> occurrencesOfTerms) {
+        CityTerm cityTerm = (CityTerm) occurrencesOfTerms.get(cityName);
+        cityTerm.addPosition(position);
+        cityTerm.incrementOccurrences();
     }
 
     protected boolean isStopWord(String s){
@@ -795,60 +771,15 @@ public class Parse {
         return toReturn;
     }
 
-    public ITokenList toTokenList(List<String> list){
-        return new StringListAsTokenList(list);
-    }
 
     public void setStopWords(Collection<String> stopWords){
         this.stopWords=stopWords;
     }
 
     public void setCityNames(Collection<String> cityNames){
-        this.cityNames=cityNames;
-    }
-
-    private class StringListAsTokenList extends ATokenList {
-
-        private List<String> list;
-        private int listIndex = 0;
-
-        StringListAsTokenList(List<String> list){
-            this.list = list;
-        }
-
-        @Override
-        protected void initializeAllFields() {
-            prepended = new ArrayList<>();
-            appended = new ArrayList<>();
-        }
-
-        @Override
-        protected void createNextToken() {
-            if(!prepended.isEmpty())
-                next = prepended.remove(0);
-            else{
-                next = !list.isEmpty() ? new Token(list.remove(0),listIndex) : null;
-                listIndex++;
-                if(next==null){
-                    next = !(appended==null || appended.isEmpty()) ? appended.remove(0) : null;
-                }
-            }
-        }
-
-        @Override
-        public void clear() {
-            list.clear();
-            listIndex=0;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return next==null && prepended.isEmpty() && appended.isEmpty() && list.isEmpty();
-        }
-
-        @Override
-        public void initialize(List<String> documentLines, Collection<Character> currencySymbols, Collection<Character> delimitersToSplitWordBy) {
-
+        this.cityNames = new ParsingHashMap(cityNames.size());
+        for (String cityName:cityNames) {
+            this.cityNames.put(cityName,cityName);
         }
     }
 }

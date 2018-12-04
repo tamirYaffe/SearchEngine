@@ -9,30 +9,26 @@ import java.util.Collection;
 import java.util.List;
 
 public class CityTerm extends WordTerm {
-    private static Parse parse = new Parse();
-    private static CountryService countryService= CountryService.getInstance();
+    private Parse parse = new Parse();
     private ATerm statePopulation;
     private ATerm countryCurrency;
     private List<Integer> positions;
     boolean isOrigin=false;
+    private Country country;
 
     public List<Integer> getPositions(){
         return positions;
     }
 
 
-    public CityTerm(String cityName){
+    public CityTerm(String cityName,Country country){
         super(cityName);
-        Country country = countryService.getByCapital(cityName).get(0);
+        this.country=country;
         addPopulationTerm(country);
         addCurrency(country);
         positions = new ArrayList<>();
     }
 
-    public CityTerm(String cityName, int position){
-        this(cityName);
-        addPosition(position);
-    }
 
     private void addPopulationTerm(Country country){
         List<String> statePopulationList = new ArrayList<>();
@@ -49,7 +45,9 @@ public class CityTerm extends WordTerm {
         List<String> currencyStringList = new ArrayList<>();
         currencyStringList.addAll(country.getCurrencies());
         Collection<ATerm> currencyTerms = parse.parseText(currencyStringList);
-        countryCurrency = currencyTerms.iterator().next();
+        for (ATerm term:currencyTerms) {
+            countryCurrency=term;
+        }
     }
 
 
@@ -60,10 +58,14 @@ public class CityTerm extends WordTerm {
 
 
     public String getStatePopulation(){
+        if(statePopulation==null)
+            addPopulationTerm(country);
         return statePopulation.getTerm();
     }
 
     public String getCountryCurrency(){
+        if(countryCurrency==null)
+            addCurrency(country);
         return countryCurrency.getTerm();
     }
 
@@ -93,7 +95,7 @@ public class CityTerm extends WordTerm {
 
     public String toString(){
         String toReturn ="CityTerm:"+getTerm()+"~"+"\nOccurences: "+(getOccurrences())+"\nis origin:"+isOrigin+
-                "\nCountry: "+countryService.getByCapital(term).get(0).getName()+"\nPopulation size: "+getStatePopulation()+
+                "\nCountry: "+country.getName()+"\nPopulation size: "+getStatePopulation()+
                 "\nCurrency: "+getCountryCurrency()+"\nPositions:";
         for (int i = 0; i < positions.size(); i++) {
             toReturn+=","+positions.get(i);
