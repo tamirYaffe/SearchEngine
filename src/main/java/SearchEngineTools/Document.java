@@ -16,6 +16,7 @@ public class Document {
     private int numOfUniqeTerms;
     private  String docCity;
 
+
     public Document(int docNum) {
         this.docNum=docNum;
     }
@@ -61,8 +62,8 @@ public class Document {
         numOfUniqeTerms++;
     }
     public void writeDocInfoToDisk(String postingFilesPath){
-        String seperator="/";
-        String pathName=postingFilesPath+seperator+"DocumentsInfo.txt";
+        String fileSeparator=System.getProperty("file.separator");
+        String pathName=postingFilesPath+fileSeparator+"DocumentsInfo.txt";
         File file = new File(pathName);
         try(FileWriter fw = new FileWriter(file, true);
             BufferedWriter bw = new BufferedWriter(fw);
