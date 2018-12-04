@@ -7,7 +7,6 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
@@ -78,7 +77,7 @@
                   <Insets top="10.0" />
                </VBox.margin>
             </HBox>
-            <HBox prefHeight="49.0" prefWidth="600.0">
+            <HBox fx:id="hbox_bottom" prefHeight="49.0" prefWidth="600.0">
                <children>
                   <Button fx:id="btn_loadDictionary" mnemonicParsing="false" onAction="#onClickLoadDictionary" text="Load dictionary">
                      <HBox.margin>
@@ -103,11 +102,6 @@
                   <Insets left="240.0" top="10.0" />
                </VBox.margin>
             </Button>
-            <TextArea fx:id="ta_showDictionary" prefHeight="400.0" prefWidth="200.0">
-               <VBox.margin>
-                  <Insets top="10.0" />
-               </VBox.margin>
-            </TextArea>
          </children>
       </VBox>
    </center>

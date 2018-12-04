@@ -17,7 +17,7 @@ public class Indexer {
     //dictionary and posting list in one hash
     private Map<String, PostingList> tempInvertedIndex;
     //dictionary and posting list in one hash for cities.
-    private Map<String, List<CityPostingEntry>> tempCityInvertedIndex;
+    private Map<String, Pair<CityTerm,List<CityPostingEntry>>> tempCityInvertedIndex;
 
 
     private int memoryBlockSize;
@@ -220,21 +220,6 @@ public class Indexer {
             e.printStackTrace();
         }
     }
-
-    private void addToCityIndex(ATerm aTerm, int docID) {
-        CityTerm cityTerm= (CityTerm) aTerm;
-        List<CityPostingEntry> postingsList;
-        CityPostingEntry postingEntry=new CityPostingEntry(docID,cityTerm.getPositions());
-        String term=aTerm.getTerm();
-        if (!tempCityInvertedIndex.containsKey(term)) {
-            postingsList = new ArrayList<>();
-            tempCityInvertedIndex.put(term, postingsList);
-        } else {
-            postingsList = tempCityInvertedIndex.get(term);
-        }
-        postingsList.add(postingEntry);
-    }
-
     //<editor-fold desc="Private functions">
     private String extractTerm(String postingList) {
         return postingList.substring(0,postingList.indexOf(";"));
@@ -362,13 +347,59 @@ public class Indexer {
             Collections.sort(keys);
             for (String key : keys) {
                 Pair<Integer,Integer>dictionaryPair=dictionary.get(key);
-                bw.write(key+" "+dictionaryPair.getKey()+" "+dictionaryPair.getValue());
+                bw.write(key+":"+dictionaryPair.getKey());
+//                bw.write(key+":"+dictionaryPair.getKey()+","+dictionaryPair.getValue());
                 bw.newLine();
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void addToCityIndex(ATerm aTerm, int docID) {
+        CityTerm cityTerm= (CityTerm) aTerm;
+        List<CityPostingEntry> postingsList;
+        CityPostingEntry postingEntry=new CityPostingEntry(docID,cityTerm.getPositions());
+        String term=aTerm.getTerm();
+        if (!tempCityInvertedIndex.containsKey(term)) {
+            postingsList = new ArrayList<>();
+            tempCityInvertedIndex.put(term, new Pair<>(cityTerm,postingsList));
+        } else {
+            postingsList = tempCityInvertedIndex.get(term).getValue();
+        }
+        postingsList.add(postingEntry);
+    }
+
+
+    public void writeCityIndex() {
+        String pathName=postingFilesPath+fileSeparator+"cityIndex.txt";
+        File file = new File(pathName);
+        try (FileWriter fw = new FileWriter(file);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+
+            List<String> keys = new ArrayList<>(dictionary.keySet());
+            Collections.sort(keys);
+            for (String key : keys) {
+                Pair<CityTerm,List<CityPostingEntry>>indexPair=tempCityInvertedIndex.get(key);
+                CityTerm cityTerm=indexPair.getKey();
+                List<CityPostingEntry>postingList=indexPair.getValue();
+                String positionList="";
+                for(CityPostingEntry entry:postingList)
+                    positionList+=entry+",";
+                bw.write(key+" "+cityTerm.getCountryCurrency()+" "+cityTerm.getStatePopulation()+" "+positionList);
+                bw.newLine();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void clear() {
+        dictionary.clear();
+        tempInvertedIndex.clear();
+        tempCityInvertedIndex.clear();
     }
     //</editor-fold>
 }
