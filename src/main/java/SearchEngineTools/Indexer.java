@@ -9,6 +9,7 @@ import sun.awt.Mutex;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Indexer {
     //dictionary that holds term->idf. used also for word check for big first word.
@@ -21,9 +22,19 @@ public class Indexer {
 
     private int memoryBlockSize;
     private int usedMemory;
-    private int blockNum;
     private int termsNum;
     private String postingFilesPath;
+
+    public void setDictionary(Map<String, Pair<Integer, Integer>> dictionary) {
+        this.dictionary = dictionary;
+    }
+
+    private String fileSeparator=System.getProperty("file.separator");
+
+
+    //writeThread
+    private AtomicInteger blockNum=new AtomicInteger();
+    private Mutex mutex=new Mutex();
 
 
     public Indexer() {
@@ -32,23 +43,25 @@ public class Indexer {
         tempCityInvertedIndex=new LinkedHashMap<>();
     }
 
-    public Indexer(Map<String, Pair<Integer,Integer>> dictionary) {
-        this.dictionary = dictionary;
-        tempInvertedIndex = new LinkedHashMap<>();
-    }
-
     public Indexer(int memoryBlockSize,String postingFilesPath) {
         this();
         this.memoryBlockSize = memoryBlockSize;
         this.postingFilesPath=postingFilesPath;
     }
 
-    public int getTermsNum() {
-        return termsNum;
+    public Indexer(int memoryBlockSize) {
+        this();
+        this.memoryBlockSize = memoryBlockSize;
     }
 
-    public int getDictionarySize(){
-        return dictionary.size();
+    public void setPostingFilesPath(String postingFilesPath) {
+        this.postingFilesPath = postingFilesPath;
+    }
+
+
+
+    public int getTermsNum() {
+        return termsNum;
     }
 
     /**
@@ -62,6 +75,8 @@ public class Indexer {
         Document document=new Document(docID);
         while (terms.hasNext()) {
             ATerm aTerm = terms.next();
+            if(aTerm.getTerm().equals("."))
+                System.out.println("liad");
             if (aTerm instanceof WordTerm && Character.isLetter(aTerm.getTerm().charAt(0)))
                 handleCapitalWord(aTerm);
             String term = aTerm.getTerm();
@@ -106,19 +121,18 @@ public class Indexer {
         System.out.println("starting merge");
         System.out.println("dictionary size: "+getDictionarySize());
         int postingListIndex=0;
-        BufferedReader[] readers = new BufferedReader[blockNum];
+        BufferedReader[] readers = new BufferedReader[blockNum.get()];
         PostingListComparator comparator=new PostingListComparator();
         PriorityQueue<Pair<String, Integer>> queue = new PriorityQueue<>(comparator);
-        String seperator="/";
-        String pathName=postingFilesPath+seperator+"postingLists.txt";
+        String pathName=postingFilesPath+fileSeparator+"postingLists.txt";
         File file = new File(pathName);
         FileWriter fw = new FileWriter(file,true);
         BufferedWriter bw = new BufferedWriter(fw);
         String curPostingList;
         List<String> bufferPostingLists=new ArrayList<>();
         //create readers and init queue.
-        for (int i = 0; i < blockNum; i++) {
-            String fileName = "blocks/block" + i + ".txt";
+        for (int i = 0; i < blockNum.get(); i++) {
+            String fileName = "blocks"+fileSeparator+"block" + i + ".txt";
             readers[i] = new BufferedReader(new FileReader(fileName));
             queue.add(new Pair<>(readers[i].readLine(), i));
         }
@@ -145,31 +159,54 @@ public class Indexer {
             writeBufferPostingListsToDisk(bw,bufferPostingLists);
         }
         bw.close();
-        writeDictionaryToDisk();
-        //sortAndWriteDictionaryToDisk();
+//        writeDictionaryToDisk();
+        sortAndWriteDictionaryToDisk();
     }
 
     public  void sortAndWriteInvertedIndexToDisk() {
-        if(usedMemory==0)
-            return;
-        System.out.println("writing to disk: blockNum" +blockNum+" "+ usedMemory+" bytes");
-        String fileName = "blocks/block" + blockNum + ".txt";
-        blockNum++;
-        try (FileWriter fw = new FileWriter(fileName);
-             BufferedWriter bw = new BufferedWriter(fw)) {
+        mutex.lock();
+        Map<String, PostingList> toWrite=tempInvertedIndex;
+        tempInvertedIndex=new HashMap<>();
+        Thread thread=new Thread(()->{
+            if(usedMemory==0)
+                return;
+            System.out.println("writing to disk: blockNum" +blockNum.get()+" "+ usedMemory+" bytes");
+            String fileName = "blocks"+fileSeparator+"block" + blockNum.get() + ".txt";
+            blockNum.getAndIncrement();
+            try (FileWriter fw = new FileWriter(fileName);
+                 BufferedWriter bw = new BufferedWriter(fw)) {
 
-            List<String> keys = new ArrayList<>(tempInvertedIndex.keySet());
-            Collections.sort(keys);
-            for (String key : keys) {
-                bw.write(key+";");
-                bw.write(""+tempInvertedIndex.get(key));
-                bw.newLine();
+                List<String> keys = new ArrayList<>(toWrite.keySet());
+                Collections.sort(keys);
+                for (String key : keys) {
+                    bw.write(key+";");
+                    bw.write(""+toWrite.get(key));
+                    bw.newLine();
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-        } catch (IOException e) {
+        });
+        thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("finished writing blockNum"+blockNum);
+        toWrite.clear();
+        System.out.println("finished writing blockNum"+blockNum.get());
+        mutex.unlock();
+    }
+
+    public Map<String, Pair<Integer, Integer>> getDictionary() {
+        return dictionary;
+    }
+
+    public int getDictionarySize(){
+        if(dictionary==null)
+            return 0;
+        return dictionary.size();
     }
 
     public void loadDictionaryFromDisk(String path){
@@ -212,21 +249,6 @@ public class Indexer {
         }
     }
 
-    private void writeDictionaryToDisk() {
-        String seperator="/";
-        String pathName=postingFilesPath+seperator+"dictionary.txt";
-        File file = new File(pathName);
-        try (FileWriter fw = new FileWriter(file);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-            for(Map.Entry entry: dictionary.entrySet()){
-                bw.write(entry.getKey()+" "+((Pair<Integer,Integer>)entry.getValue()).getKey()+" "+((Pair<Integer,Integer>)entry.getValue()).getValue());
-                bw.newLine();
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      * remove top of queue,and add the next line from the removed line block.
@@ -315,8 +337,25 @@ public class Indexer {
         }
     }
 
+    private void writeDictionaryToDisk() {
+        String pathName=postingFilesPath+fileSeparator+"dictionary.txt";
+        File file = new File(pathName);
+        try (FileWriter fw = new FileWriter(file);
+             BufferedWriter bw = new BufferedWriter(fw)) {
+            for(Map.Entry entry: dictionary.entrySet()){
+                bw.write(entry.getKey()+" "+((Pair<Integer,Integer>)entry.getValue()).getKey()+" "+((Pair<Integer,Integer>)entry.getValue()).getValue());
+                bw.newLine();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void sortAndWriteDictionaryToDisk() {
-        try (FileWriter fw = new FileWriter("dictionary.txt");
+        String pathName=postingFilesPath+fileSeparator+"dictionary.txt";
+        File file = new File(pathName);
+        try (FileWriter fw = new FileWriter(file);
              BufferedWriter bw = new BufferedWriter(fw)) {
 
             List<String> keys = new ArrayList<>(dictionary.keySet());
