@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class ReadFile {
@@ -22,7 +23,7 @@ public class ReadFile {
     private HashSet<String> stopWords = new HashSet<>();
     private String corpusPath;
     private String postingFilesPath;
-    private String fileSeparator=System.getProperty("file.separator");
+    private String fileSeparator = System.getProperty("file.separator");
 
     //for documents
     private List<String> documentsBuffer = new ArrayList<>();
@@ -30,22 +31,22 @@ public class ReadFile {
 
     //threads
     private ConcurrentBuffer<Pair<Iterator<ATerm>, Integer>> PIBuffer = new ConcurrentBuffer<>(Integer.MAX_VALUE);
-    private ConcurrentBuffer<Pair<List<String>, Integer>> RPBuffer = new ConcurrentBuffer<>(4);
+//    private ConcurrentBuffer<Pair<List<String>, Integer>> RPBuffer = new ConcurrentBuffer<>(4);
     private Mutex mutex = new Mutex();
-    private List<Thread> threads=new ArrayList<>();
+    private List<Thread> threads = new ArrayList<>();
 
     public ReadFile(Indexer indexer, String corpusPath, String postingFilesPath, boolean useStemming) {
-        this.corpusPath=corpusPath;
-        this.postingFilesPath=postingFilesPath;
+        this.corpusPath = corpusPath;
+        this.postingFilesPath = postingFilesPath;
         this.indexer = indexer;
-        if(useStemming)
+        if (useStemming)
             parse = new ParseWithStemming();
         else
-            parse=new Parse();
+            parse = new Parse();
     }
 
     public int listAllFiles() {
-        String path=corpusPath;
+        String path = corpusPath;
         createStopWords(path);
         Document.corpusPath = path;
         startIndexThread();
@@ -77,8 +78,8 @@ public class ReadFile {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("terms count:"+indexer.getTermsNum());
-        System.out.println("Dictionary size: "+indexer.getDictionarySize());
+        System.out.println("terms count:" + indexer.getTermsNum());
+        System.out.println("Dictionary size: " + indexer.getDictionarySize());
         return numOfDocs;
     }
 
@@ -101,7 +102,7 @@ public class ReadFile {
     }
 
 
-    private List<String> readContent(Path filePath){
+    private List<String> readContent(Path filePath) {
 
         BufferedReader br = null;
         FileReader fr = null;
@@ -193,7 +194,7 @@ public class ReadFile {
     }
 
     private void writeDocumentsToDisk() {
-        String pathName=postingFilesPath+fileSeparator+"Documents.txt";
+        String pathName = postingFilesPath + fileSeparator + "Documents.txt";
         File file = new File(pathName);
         try (FileWriter fw = new FileWriter(file, true);
              BufferedWriter bw = new BufferedWriter(fw)) {
@@ -209,33 +210,16 @@ public class ReadFile {
     private String extractFileName(String path) {
         String[] splitPath;
         String fileName;
-        /*
-        if (path.contains("\\")) {
-            splitPath = path.split("\\\\");
-            fileName = "\\" + splitPath[splitPath.length - 1] + "\\" + splitPath[splitPath.length - 2];
-        } else {
-            splitPath = path.split("/");
-            fileName = "/" + splitPath[splitPath.length - 1] + "/" + splitPath[splitPath.length - 2];
-        }
-        */
-        splitPath = path.split(fileSeparator);
-        fileName = "/" + splitPath[splitPath.length - 1] + "/" + splitPath[splitPath.length - 2];
+        splitPath = path.split(Pattern.quote(fileSeparator));
+        fileName = fileSeparator + splitPath[splitPath.length - 1] + fileSeparator + splitPath[splitPath.length - 2];
         return fileName;
     }
 
     public static void deletePrevFiles() {
-        try {
-            Files.delete(Paths.get("dictionary.txt"));
-            Files.delete(Paths.get("postingLists.txt"));
-            Files.delete(Paths.get("Documents.txt"));
-            Files.delete(Paths.get("DocumentsInfo.txt"));
-            File dir = new File("blocks");
-            for (File file : dir.listFiles())
-                if (!file.isDirectory())
-                    file.delete();
-        } catch (IOException e) {
-            System.out.println("all files did not deleted");
-        }
+        File dir = new File("blocks");
+        for (File file : dir.listFiles())
+            if (!file.isDirectory())
+                file.delete();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
@@ -314,6 +298,9 @@ public class ReadFile {
         }
     }
 
+    public void clear() {
+        stopWords.clear();
+    }
 }
 
 
