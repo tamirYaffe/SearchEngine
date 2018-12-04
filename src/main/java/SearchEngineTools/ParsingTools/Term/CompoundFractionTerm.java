@@ -1,7 +1,7 @@
 package SearchEngineTools.ParsingTools.Term;
 
 public class CompoundFractionTerm extends FractionTerm {
-    private  NumberTerm whole;
+    private NumberTerm whole;
 
     NumberTerm getWholeNumber(){
         return whole;

@@ -62,7 +62,9 @@ public class NumberTerm extends ATerm{
                 numberWithoutDecimal.add(number.charAt(i));
             }
         }
-
+        if(containsDecimal&&numberWithoutDecimal.size()==1 && numberWithoutDecimal.get(0)=='0'){
+            containsDecimal=false;
+        }
         this.term = null;
     }
 
@@ -84,6 +86,8 @@ public class NumberTerm extends ATerm{
 
 
     public void multiply(Value multiplyBy){
+        if((term!=null && term.equals("0")) || (!containsDecimal && numberWithoutDecimal.size()==1 && numberWithoutDecimal.get(0)=='0'))
+            return;
         int digitsToAdd=0;
         switch (multiplyBy){
             case TRILLION:

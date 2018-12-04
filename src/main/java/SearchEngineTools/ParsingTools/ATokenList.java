@@ -11,13 +11,16 @@ public abstract class ATokenList implements ITokenList {
     protected Collection<Character> currencySymbols;
     protected Collection<Character> delimitersToSplitWordBy;
     protected Token next;
-    private boolean initialized = false;
 
     public ATokenList(){
         initializeAllFields();
     }
 
-    protected abstract void initializeAllFields();
+    protected void initializeAllFields(){
+        prepended = new ArrayList<>();
+        appended = new ArrayList<>();
+        next = null;
+    }
 
     @Override
     public Token peek() {
@@ -39,6 +42,9 @@ public abstract class ATokenList implements ITokenList {
     public void prepend(List<Token> tokens){
         for (Token t:tokens) {
             removeUnnecessaryChars(t);
+            String tokenString = t.getTokenString();
+            if(tokenString==null || tokenString.length()==0)
+                tokens.remove(t);
         }
         prependValidTokens(tokens);
     }
@@ -79,14 +85,18 @@ public abstract class ATokenList implements ITokenList {
         }
     }
 
-    private void prependValidTokens(List<Token> validTokens){
+   /* private void prependValidTokens(List<Token> validTokens){
         prepended.addAll(0, validTokens);
         if(next!=null && !prepended.contains(next)){
             prepended.add(next);
             next=prepended.remove(0);
         }
-    }
+    }*/
 
+    @Override
+    public void prependValidTokens(List<Token> t){
+
+    }
     @Override
     public boolean has(int index) {
         return get(index)!=null;

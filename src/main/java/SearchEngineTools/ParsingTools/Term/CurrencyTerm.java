@@ -2,7 +2,7 @@ package SearchEngineTools.ParsingTools.Term;
 
 import java.util.List;
 
-public class CurrencyTerm extends ATerm{
+public class CurrencyTerm extends ATerm {
 
     protected NumberTerm numberTerm;
     protected String currency;
