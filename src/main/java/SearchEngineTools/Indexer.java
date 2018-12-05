@@ -11,38 +11,48 @@ import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * A class that represents the indexer process.
+ */
 public class Indexer {
-    //dictionary that holds term->idf. used also for word check for big first word.
+    //dictionary that holds term->df. used also for word check for big first word.
     private Map<String, Pair<Integer, Integer>> dictionary;
-    //dictionary and posting list in one hash
+
+    //dictionary and posting list in one hash.
     private Map<String, PostingList> tempInvertedIndex;
+
     //dictionary and posting list in one hash for cities.
-    private Map<String, Pair<CityTerm, List<CityPostingEntry>>> tempCityInvertedIndex;
+    private Map<String, Pair<CityTerm, List<CityPostingEntry>>> cityInvertedIndex;
 
-
+    //temp posting blocks to write size.
     private int memoryBlockSize;
+
+    //current block file memory size
     private int usedMemory;
-    private int termsNum;
+
+    //posting files path.
     private String postingFilesPath;
+
+    //var for determine if to use stemming in the parse.
     private boolean useStemming;
 
-    public void setDictionary(Map<String, Pair<Integer, Integer>> dictionary) {
-        this.dictionary = dictionary;
-    }
-
+    //file Separator "/" in unix or "\" in windows.
     private String fileSeparator = System.getProperty("file.separator");
 
 
-    //writeThread
+    //concurrent vars.
     private AtomicInteger blockNum = new AtomicInteger();
     private Mutex mutex = new Mutex();
     private Semaphore semaphore = new Semaphore(0);
 
-
+    //<editor-fold desc="Constructors">
+    /**
+     * A default constructor.
+     */
     public Indexer() {
         dictionary = new LinkedHashMap<>();
         tempInvertedIndex = new HashMap<>();
-        tempCityInvertedIndex = new LinkedHashMap<>();
+        cityInvertedIndex = new LinkedHashMap<>();
     }
 
     public Indexer(int memoryBlockSize, String postingFilesPath) {
@@ -55,24 +65,15 @@ public class Indexer {
         this();
         this.memoryBlockSize = memoryBlockSize;
     }
-
-    public void setPostingFilesPath(String postingFilesPath) {
-        this.postingFilesPath = postingFilesPath;
-    }
-
-
-    public int getTermsNum() {
-        return termsNum;
-    }
+    //</editor-fold>
 
     /**
      * Creates the dictionary and posting files.
      *
      * @param terms - list of the document terms(after parse).
-     * @param docID
+     * @param docID - the docId of the terms list.
      */
     public void createInvertedIndex(Iterator<ATerm> terms, int docID) {
-        //System.out.println("started indexing: "+docID);
         Document document = new Document(docID);
         while (terms.hasNext()) {
             ATerm aTerm = terms.next();
@@ -87,13 +88,14 @@ public class Indexer {
             }
             int termOccurrences = aTerm.getOccurrences();
             document.updateDocInfo(termOccurrences);
+
             //add or update dictionary.
             if (!dictionary.containsKey(term)) {
                 dictionary.put(term, new Pair<>(1, -1));
-                termsNum++;
-                //System.out.println("termsNum: "+termsNum+ " dictionary size: "+dictionary.size());
             } else
                 dictionary.replace(term, new Pair<>(dictionary.get(term).getKey() + 1, -1));
+
+            //add or update temp inverted index.
             PostingList postingsList;
             PostingEntry postingEntry = new PostingEntry(docID, termOccurrences);
             if (!tempInvertedIndex.containsKey(term)) {
@@ -104,8 +106,12 @@ public class Indexer {
                 postingsList = tempInvertedIndex.get(term);
             }
             int addedMemory = postingsList.add(postingEntry);
+
+            //update usedMemory .
             if (addedMemory != -1)
                 usedMemory += addedMemory;
+
+            //check and write to disk if needed.
             if (usedMemory > memoryBlockSize) {
                 try {
                     sortAndWriteInvertedIndexToDisk();
@@ -117,17 +123,31 @@ public class Indexer {
                 usedMemory = 0;
             }
         }
+
+        //write current document info to disk.
         document.writeDocInfoToDisk(postingFilesPath);
-        //System.out.println("finish: " + docID);
     }
 
+    /**
+     * Merging all posting blocks into one file(postingLists).
+     * @throws IOException
+     */
     public void mergeBlocks() throws IOException {
         System.out.println("starting merge");
         System.out.println("dictionary size: " + getDictionarySize());
+
+        //init vars.
         int postingListIndex = 0;
         BufferedReader[] readers = new BufferedReader[blockNum.get()];
+
+        //priority queue for posting lists that sorts by posting list term and docID in the list.
         PostingListComparator comparator = new PostingListComparator();
         PriorityQueue<Pair<String, Integer>> queue = new PriorityQueue<>(comparator);
+
+        String curPostingList;
+        List<String> bufferPostingLists = new ArrayList<>();
+
+        //open BufferedWriter.
         String fileName;
         if(useStemming)
             fileName="postingListsStemming.txt";
@@ -137,8 +157,8 @@ public class Indexer {
         File file = new File(pathName);
         FileWriter fw = new FileWriter(file, true);
         BufferedWriter bw = new BufferedWriter(fw);
-        String curPostingList;
-        List<String> bufferPostingLists = new ArrayList<>();
+
+
         //create readers and init queue.
         for (int i = 0; i < blockNum.get(); i++) {
             fileName = "blocks" + fileSeparator + "block" + i + ".txt";
@@ -149,11 +169,12 @@ public class Indexer {
             curPostingList = getNextPostingList(queue, readers);
             curPostingList = checkForMergeingPostingLines(queue, readers, curPostingList);
             String term = extractTerm(curPostingList);
-            //termsNum++;
             dictionary.replace(term, new Pair<>(dictionary.get(term).getKey(), postingListIndex++));
+
             //write to buffer posting lists
             bufferPostingLists.add(curPostingList);
             usedMemory += curPostingList.length() - term.length();
+
             //check size of buffer
             if (usedMemory > memoryBlockSize) {
                 writeBufferPostingListsToDisk(bw, bufferPostingLists);
@@ -161,50 +182,20 @@ public class Indexer {
                 bufferPostingLists.clear();
                 usedMemory = 0;
             }
-
         }
         //writing buffer remaining posting lists
         if (usedMemory > 0) {
             writeBufferPostingListsToDisk(bw, bufferPostingLists);
         }
         bw.close();
-//        writeDictionaryToDisk();
         sortAndWriteDictionaryToDisk();
+        resetIndex();
     }
 
-    private void sortAndWriteInvertedIndexToDiskThread() throws InterruptedException {
-        if (usedMemory == 0)
-            return;
-        Thread thread = new Thread(() -> {
-            mutex.lock();
-            Map<String, PostingList> toWrite = tempInvertedIndex;
-            tempInvertedIndex = new HashMap<>();
-            semaphore.release();
-            System.out.println("writing to disk: blockNum" + blockNum.get() + " " + usedMemory + " bytes");
-            String fileName = "blocks" + fileSeparator + "block" + blockNum.get() + ".txt";
-            blockNum.getAndIncrement();
-            mutex.unlock();
-            try (FileWriter fw = new FileWriter(fileName);
-                 BufferedWriter bw = new BufferedWriter(fw)) {
-
-                List<String> keys = new ArrayList<>(toWrite.keySet());
-                Collections.sort(keys);
-                for (String key : keys) {
-                    bw.write(key + ";");
-                    bw.write("" + toWrite.get(key));
-                    bw.newLine();
-                }
-                toWrite.clear();
-                System.out.println("finished writing blockNum" + blockNum.get());
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-        thread.start();
-        semaphore.acquire();
-    }
-
+    /**
+     * Sorts and write the temp inverted index to file: block*, *-curr block number.
+     * @throws InterruptedException
+     */
     public void sortAndWriteInvertedIndexToDisk() throws InterruptedException {
         if (usedMemory == 0)
             return;
@@ -220,40 +211,74 @@ public class Indexer {
                 bw.write("" + tempInvertedIndex.get(key));
                 bw.newLine();
             }
-            System.out.println("finished writing blockNum" + blockNum.get());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public Map<String, Pair<Integer, Integer>> getDictionary() {
-        return dictionary;
-    }
+    /**
+     * Writes city index to file cityIndex in disk.
+     */
+    public void writeCityIndex() {
+        String fileName;
+        if(useStemming)
+            fileName="cityIndexStemming.txt";
+        else
+            fileName="cityIndex.txt";
+        String pathName = postingFilesPath + fileSeparator + fileName;
+        File file = new File(pathName);
+        try (FileWriter fw = new FileWriter(file);
+             BufferedWriter bw = new BufferedWriter(fw)) {
 
-    public int getDictionarySize() {
-        if (dictionary == null)
-            return 0;
-        return dictionary.size();
-    }
-
-    public void loadDictionaryFromDisk(String path) {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(path));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                dictionary.put(line.split(" ")[0], new Pair<>(Integer.valueOf(line.split(" ")[1]), Integer.valueOf(line.split(" ")[2])));
+            List<String> keys = new ArrayList<>(cityInvertedIndex.keySet());
+            Collections.sort(keys);
+            for (String key : keys) {
+                Pair<CityTerm, List<CityPostingEntry>> indexPair = cityInvertedIndex.get(key);
+                CityTerm cityTerm = indexPair.getKey();
+                List<CityPostingEntry> postingList = indexPair.getValue();
+                String sPostingList = "";
+                for (int i = 0; i < postingList.size(); i++) {
+                    if (i == 0)
+                        sPostingList += postingList.get(i);
+                    else
+                        sPostingList += "," + postingList.get(i);
+                }
+                bw.write(key + " " + cityTerm.getCountryCurrency() + " " + cityTerm.getStatePopulation() + " " + sPostingList);
+                bw.newLine();
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Clears all the class data structures.
+     */
+    public void clear() {
+        dictionary.clear();
+        tempInvertedIndex.clear();
+        cityInvertedIndex.clear();
     }
 
     //<editor-fold desc="Private functions">
+
+    /**
+     * Extracts term from posting list.
+     * @param postingList- list to extract term from.
+     * @return -the term from the posting list.
+     */
     private String extractTerm(String postingList) {
         return postingList.substring(0, postingList.indexOf(";"));
     }
 
+    /**
+     * Writes posting lists in input bufferPostingLists to file postingLists in disk.
+     * @param bw- BufferWriter we use to write.
+     * @param bufferPostingLists- posting lists to write.
+     * @throws IOException
+     */
     private void writeBufferPostingListsToDisk(BufferedWriter bw, List<String> bufferPostingLists) throws IOException {
 
         for (String postingList : bufferPostingLists) {
@@ -265,11 +290,11 @@ public class Indexer {
 
 
     /**
-     * remove top of queue,and add the next line from the removed line block.
+     * Remove top of priority queue,and add the next line from the removed line block.
      *
-     * @param queue
-     * @param readers
-     * @return
+     * @param queue - queue to get next posting list from.
+     * @param readers - an array of buffered readers to read from blocks if necessary.
+     * @return - next posting list
      * @throws IOException
      */
     private String getNextPostingList(PriorityQueue<Pair<String, Integer>> queue, BufferedReader[] readers) throws IOException {
@@ -351,21 +376,6 @@ public class Indexer {
         }
     }
 
-    private void writeDictionaryToDisk() {
-        String pathName = postingFilesPath + fileSeparator + "dictionary.txt";
-        File file = new File(pathName);
-        try (FileWriter fw = new FileWriter(file);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-            for (Map.Entry entry : dictionary.entrySet()) {
-                bw.write(entry.getKey() + " " + ((Pair<Integer, Integer>) entry.getValue()).getKey() + " " + ((Pair<Integer, Integer>) entry.getValue()).getValue());
-                bw.newLine();
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     private void sortAndWriteDictionaryToDisk() {
         String fileName;
         if(useStemming)
@@ -382,7 +392,6 @@ public class Indexer {
             for (String key : keys) {
                 Pair<Integer, Integer> dictionaryPair = dictionary.get(key);
                 bw.write(key + ":" + dictionaryPair.getKey());
-//                bw.write(key+":"+dictionaryPair.getKey()+","+dictionaryPair.getValue());
                 bw.newLine();
             }
 
@@ -397,57 +406,45 @@ public class Indexer {
         List<Integer> positions = cityTerm.getPositions();
         CityPostingEntry postingEntry = new CityPostingEntry(docID, positions);
         String term = aTerm.getTerm();
-        if (!tempCityInvertedIndex.containsKey(term)) {
+        if (!cityInvertedIndex.containsKey(term)) {
             postingsList = new ArrayList<>();
-            tempCityInvertedIndex.put(term, new Pair<>(cityTerm, postingsList));
+            cityInvertedIndex.put(term, new Pair<>(cityTerm, postingsList));
         } else {
-            postingsList = tempCityInvertedIndex.get(term).getValue();
+            postingsList = cityInvertedIndex.get(term).getValue();
         }
         postingsList.add(postingEntry);
     }
 
-
-    public void writeCityIndex() {
-        String fileName;
-        if(useStemming)
-            fileName="cityIndexStemming.txt";
-        else
-            fileName="cityIndex.txt";
-        String pathName = postingFilesPath + fileSeparator + fileName;
-        File file = new File(pathName);
-        try (FileWriter fw = new FileWriter(file);
-             BufferedWriter bw = new BufferedWriter(fw)) {
-
-            List<String> keys = new ArrayList<>(tempCityInvertedIndex.keySet());
-            Collections.sort(keys);
-            for (String key : keys) {
-                Pair<CityTerm, List<CityPostingEntry>> indexPair = tempCityInvertedIndex.get(key);
-                CityTerm cityTerm = indexPair.getKey();
-                List<CityPostingEntry> postingList = indexPair.getValue();
-                String sPostingList = "";
-                for (int i = 0; i < postingList.size(); i++) {
-                    if (i == 0)
-                        sPostingList += postingList.get(i);
-                    else
-                        sPostingList += "," + postingList.get(i);
-                }
-                bw.write(key + " " + cityTerm.getCountryCurrency() + " " + cityTerm.getStatePopulation() + " " + sPostingList);
-                bw.newLine();
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void clear() {
-        dictionary.clear();
+    private void resetIndex() {
+        blockNum.set(0);
         tempInvertedIndex.clear();
-        tempCityInvertedIndex.clear();
+        usedMemory=0;
     }
+    //</editor-fold>
 
+    //<editor-fold desc="Setters">
     public void setIsStemming(boolean useStemming) {
         this.useStemming=useStemming;
+    }
+
+    public void setDictionary(Map<String, Pair<Integer, Integer>> dictionary) {
+        this.dictionary = dictionary;
+    }
+
+    public void setPostingFilesPath(String postingFilesPath) {
+        this.postingFilesPath = postingFilesPath;
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Getters">
+    public Map<String, Pair<Integer, Integer>> getDictionary() {
+        return dictionary;
+    }
+
+    public int getDictionarySize() {
+        if (dictionary == null)
+            return 0;
+        return dictionary.size();
     }
     //</editor-fold>
 }

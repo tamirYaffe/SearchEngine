@@ -6,6 +6,7 @@ import eu.fayder.restcountries.v1.rest.CountryService;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class DocumentTokenList implements ITokenList {
 
@@ -13,16 +14,22 @@ public class DocumentTokenList implements ITokenList {
     private int wordCount;
     protected String currentLine;
     protected List<String> documentLines;
+    private Collection<String> stopWords;
     private List<Token> prepended;
     private List<Token> appended;
     private boolean isText;
     private CityTerm cityTerm;
     private CountryService countryService = CountryService.getInstance();
+    private String docLanguage = null;
+
 
     Collection<Character> delimitersToSplitWordBy;
 
     Collection<Character> currencySymbols;
 
+    public String getDocLanguage(){
+        return docLanguage;
+    }
     /**
      * Constructer for the Document TokenList Class
      */
@@ -99,7 +106,8 @@ public class DocumentTokenList implements ITokenList {
         }
         Token toReturn = null;
         if(tokenString!=null){
-            toReturn = new Token(tokenString,wordCount);
+            tokenString = (tokenString!=null && !stopWords.contains(tokenString.toLowerCase())) ? tokenString : null;
+            toReturn = tokenString!=null ?new Token(tokenString,wordCount) : null;
             wordCount++;
         }
         return toReturn;
@@ -110,9 +118,14 @@ public class DocumentTokenList implements ITokenList {
      * @return
      */
     protected String getNextTextLine() {
-
         if(isText){
             currentLine = documentLines.remove(0);
+            if(currentLine.contains("Language: <F P=105>")){
+                setDocLanguage(currentLine);
+                return getNextTextLine();
+            }
+            if(currentLine.contains("Article Type:BFN"))
+                return getNextTextLine();
             if(currentLine.equals("</TEXT>")){
                 isText = false;
                 String nextLine = getNextTextLine();
@@ -122,6 +135,10 @@ public class DocumentTokenList implements ITokenList {
                 return currentLine;
         }
         else {
+            if(currentLine!=null && currentLine.contains("Language: <F P=105>")){
+                setDocLanguage(currentLine);
+                return getNextTextLine();
+            }
             while (!documentLines.isEmpty() && !isText){
                 currentLine = documentLines.remove(0);
                 if(currentLine.contains("<F P=104>")) {
@@ -202,6 +219,14 @@ public class DocumentTokenList implements ITokenList {
         appended.addAll(tokens);
     }
 
+    private void setDocLanguage(String currentLine){
+        currentLine = currentLine.substring(19);
+        int indexOfTag = currentLine.indexOf(("</F>"));
+        currentLine = currentLine.substring(0,indexOfTag);
+        currentLine = removeUnnecessaryChars(currentLine);
+        docLanguage = currentLine;
+    }
+
     /**
      * checks that all Tokens in list are valid, removes invalid Tokens
      * @param tokens
@@ -263,12 +288,19 @@ public class DocumentTokenList implements ITokenList {
         return get(index)!=null;
     }
 
-    @Override
-    public void initialize(List<String> documentLines, Collection<Character> currencySymbols, Collection<Character> delimitersToSplitWordBy) {
+    /**
+     * InitializeDocumentTokenList
+     * @param documentLines
+     * @param currencySymbols
+     * @param delimitersToSplitWordBy
+     * @param stopWords
+     */
+    public void initialize(List<String> documentLines, Collection<Character> currencySymbols, Collection<Character> delimitersToSplitWordBy,Collection<String> stopWords) {
         this.documentLines=documentLines;
         this.currencySymbols=currencySymbols;
         this.delimitersToSplitWordBy=delimitersToSplitWordBy;
         isText=false;
+        this.stopWords=stopWords;
         setNext();
     }
 
@@ -280,6 +312,8 @@ public class DocumentTokenList implements ITokenList {
     protected String removeUnnecessaryChars(String sToken) {
         if(sToken==null || sToken.equals(""))
             return null;
+        if(sToken.equals("Beijing"))
+            sToken=sToken;
         int firstNecessary = 0;
         int lastNecessary = sToken.length()-1;
         //find first necessary index
@@ -307,7 +341,9 @@ public class DocumentTokenList implements ITokenList {
             sToken = sToken.substring(firstNecessary,lastNecessary+1);
         if(sToken.length()>=2 && sToken.substring(sToken.length()-2,sToken.length()).equals("'s"))
             sToken = sToken.substring(0,sToken.length()-2);
-        return sToken.length()>0 ? sToken : null;
+        sToken = sToken.length()>0 ? sToken : null;
+        return sToken;
+
     }
 
     public CityTerm getCityTerm() {

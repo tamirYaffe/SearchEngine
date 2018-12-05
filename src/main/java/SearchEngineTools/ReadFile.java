@@ -80,8 +80,6 @@ public class ReadFile {
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("terms count:" + indexer.getTermsNum());
-        System.out.println("Dictionary size: " + indexer.getDictionarySize());
         return numOfDocs;
     }
 
