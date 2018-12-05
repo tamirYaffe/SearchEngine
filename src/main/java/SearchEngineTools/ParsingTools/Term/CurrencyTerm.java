@@ -7,12 +7,21 @@ public class CurrencyTerm extends ATerm {
     protected NumberTerm numberTerm;
     protected String currency;
 
+    /**
+     * Value of currency
+     * @param numberTerm number that represents currency
+     * @param currency name of currency
+     */
     public CurrencyTerm(NumberTerm numberTerm, String currency){
         this.numberTerm = numberTerm;
         this.currency = currency;
+        isNumber=true;
     }
 
-
+    /**
+     * String that represents number
+     * @return
+     */
     protected String getValueTermString(){
         List<Character> numberWithoutDecimal = numberTerm.getNumberWithoutDecimal();
         String afterNumber = "";
@@ -62,6 +71,10 @@ public class CurrencyTerm extends ATerm {
         return toReturn.substring(0,lastNecessaryIndx+1);
     }
 
+    /**
+     * Multiply Term by value
+     * @param value
+     */
     public void multiply(Value value){
         numberTerm.multiply(value);
     }

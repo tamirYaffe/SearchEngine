@@ -12,15 +12,23 @@ public class NumberTerm extends ATerm{
     private boolean isNegative;
 
 
+    /**
+     * Copy Constructor for NumberTerm Class
+     * @param other
+     */
     public NumberTerm(NumberTerm other){
         this.numberWithoutDecimal = other.getNumberWithoutDecimal();
         this.locationOfDecimal = other.getLocationOfDecimal();
         containsDecimal = other.containsDecimal;
         this.isNegative=other.isNegative;
         this.term = null;
-
+        isNumber=true;
     }
 
+    /**
+     * Construct NumberTerm from String
+     * @param s String to Construct NumberTerms From
+     */
     public NumberTerm(String s){
         locationOfDecimal = Integer.MAX_VALUE;
         String number = removeCommas(s);
@@ -79,12 +87,19 @@ public class NumberTerm extends ATerm{
         return toReturn.toString();
     }
 
-
+    /**
+     *
+     * @return true if whole number, else false
+     */
     public boolean isWholeNumber(){
         return !this.containsDecimal;
     }
 
 
+    /**
+     * Multiply Number by value
+     * @param multiplyBy number to multiply by
+     */
     public void multiply(Value multiplyBy){
         if((term!=null && term.equals("0")) || (!containsDecimal && numberWithoutDecimal.size()==1 && numberWithoutDecimal.get(0)=='0'))
             return;
