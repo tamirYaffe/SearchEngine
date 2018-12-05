@@ -166,8 +166,11 @@ public class View {
         indexer.clear();
         //readFile.clear();
         System.out.println(indexer.getDictionarySize());
+        deletePostingFiles();
         actionAllButtons(false);
     }
+
+
 
     private String openFileSystem(){
         DirectoryChooser directoryChooser = new DirectoryChooser();
@@ -196,6 +199,16 @@ public class View {
         alert.setHeaderText("Ooops, there was an error!");
         alert.setContentText(msg);
         alert.showAndWait();
+    }
+
+    private void deletePostingFiles() {
+        String path=tf_postingListPath.getText();
+        if(path.length()==0)
+            return;
+        File dir = new File(path);
+        for (File file : dir.listFiles())
+            if (!file.isDirectory())
+                file.delete();
     }
 
 }
