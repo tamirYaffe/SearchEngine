@@ -210,23 +210,17 @@ public class Parse {
         List<String> cityNames = new ArrayList<>();
         CityTerm documentCity = tokenList.getCityTerm();
         Map<String,ATerm> occurrencesAndPositionsOfTerms = new HashMap<>();
-        List<String> removedFromUniqueStopWords = new ArrayList<>();
         String documentLanguage = tokenList.getDocLanguage();
         addDocumentLanguage(documentLanguage);
         if(documentCity!=null) {
             String cityTerm = documentCity.getTerm();
             cityNames.add(cityTerm);
-            if(uniqueStopWords!=null && uniqueStopWords.contains(cityTerm.toLowerCase())){
-                uniqueStopWords.remove(cityTerm.toLowerCase());
-                removedFromUniqueStopWords.add(cityTerm.toLowerCase());
-            }
             occurrencesAndPositionsOfTerms.put(documentCity.getTerm(),documentCity);
         }
         setCityNames(cityNames);
         Collection<ATerm> toReturn = parse(tokenList,occurrencesAndPositionsOfTerms);
         tokenList.clear();
         this.cityNames=null;
-        uniqueStopWords.addAll(removedFromUniqueStopWords);
         return toReturn;
 
     }
@@ -808,9 +802,10 @@ public class Parse {
     }
 
     protected WordTerm createWordTerm(Token token) {
-        boolean isStopWord = isStopWord(token.getTokenString());
-        if(!isStopWord)
-            return new WordTerm(token.getTokenString());
+        String tokenString = token.getTokenString();
+        boolean necessary = !(tokenString==null || tokenString.length()<=0 && stopWords.contains(tokenString));
+        if(necessary)
+            return new WordTerm(tokenString);
         return null;
     }
 

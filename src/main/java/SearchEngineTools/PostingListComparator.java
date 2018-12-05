@@ -4,6 +4,9 @@ import javafx.util.Pair;
 
 import java.util.Comparator;
 
+/**
+ * A class that compare two posting lists.
+ */
 public class PostingListComparator implements Comparator<Pair<String, Integer>> {
     @Override
     public int compare(Pair<String, Integer> o1, Pair<String, Integer> o2) {

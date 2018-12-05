@@ -6,7 +6,6 @@ import SearchEngineTools.ParsingTools.Term.ATerm;
 import javafx.util.Pair;
 import sun.awt.Mutex;
 import org.apache.commons.io.FileUtils;
-
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -16,6 +15,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * A class used for reading the corpus and starting parse and index process.
+ */
 public class ReadFile {
     private static int numOfDocs;
     private Parse parse;
@@ -30,12 +32,17 @@ public class ReadFile {
     private List<String> documentsBuffer = new ArrayList<>();
     private int documentBufferSize;
 
-    //threads
+    //threads use
     private ConcurrentBuffer<Pair<Iterator<ATerm>, Integer>> PIBuffer = new ConcurrentBuffer<>(Integer.MAX_VALUE);
-//    private ConcurrentBuffer<Pair<List<String>, Integer>> RPBuffer = new ConcurrentBuffer<>(4);
     private Mutex mutex = new Mutex();
-    private List<Thread> threads = new ArrayList<>();
 
+    /**
+     * Constructor
+     * @param indexer- indexer to use.
+     * @param corpusPath- the corpus path.
+     * @param postingFilesPath- the posting files path.
+     * @param useStemming- indicates which parse to use..
+     */
     public ReadFile(Indexer indexer, String corpusPath, String postingFilesPath, boolean useStemming) {
         this.corpusPath = corpusPath;
         this.postingFilesPath = postingFilesPath;
@@ -47,12 +54,15 @@ public class ReadFile {
         this.useStemming=useStemming;
     }
 
+    /**
+     * The main method of the class, controls all other methods.
+     * @return- number of docs in the corpus.
+     */
     public int listAllFiles() {
         String path = corpusPath;
         createStopWords(path);
         Document.corpusPath = path;
         startIndexThread();
-        //startParseThreads();
         try (Stream<Path> paths = Files.walk(Paths.get(path))) {
             paths.forEach(filePath -> {
                 if (Files.isRegularFile(filePath)) {
@@ -83,12 +93,15 @@ public class ReadFile {
         return numOfDocs;
     }
 
+    /**
+     * Load stop_words.txt to stopWords var.
+     * @param path- the path of the stop words file.
+     */
     private void createStopWords(String path) {
         File root = new File(path);
         String fileName = "stop_words.txt";
         try {
             boolean recursive = true;
-
             Collection files = FileUtils.listFiles(root, null, recursive);
             for (Iterator iterator = files.iterator(); iterator.hasNext(); ) {
                 File file = (File) iterator.next();
@@ -101,7 +114,11 @@ public class ReadFile {
         parse.setStopWords(stopWords);
     }
 
-
+    /**
+     * Reads the content of the file.
+     * @param filePath - path of the file.
+     * @return - list of file lines.
+     */
     private List<String> readContent(Path filePath) {
 
         BufferedReader br = null;
@@ -138,6 +155,11 @@ public class ReadFile {
         return fileList;
     }
 
+    /**
+     * Divide the input fileList into documents and activate the parse on them.
+     * @param fileList- the file lines to divide.
+     * @param filePath- the path of the file.
+     */
     private void divideFileToDocs(List<String> fileList, Path filePath) {
         List<String> docLines = new ArrayList<>();
         String docName;
@@ -152,18 +174,23 @@ public class ReadFile {
             if (line.equals("</DOC>")) {
                 createDoc(filePath, startLineNumInt, numOfLinesInt);
                 Collection<ATerm> terms = parse.parseDocument(docLines);
+
+                //add the parse terms to the producer-consumer buffer.
                 PIBuffer.add(new Pair(terms.iterator(), numOfDocs));
-                //System.out.println("finish parse doc: " + numOfDocs);
+
                 startLineNumInt = endLineNumInt + 1;
                 numOfLinesInt = 0;
                 docLines.clear();
                 numOfDocs++;
-                //System.out.println("num of docs: " + numOfDocs);
             }
         }
 
     }
 
+    /**
+     * Starting the index thread.
+     * the thread is the consumer of the Concurrent Buffer.
+     */
     private void startIndexThread() {
         System.out.println("starting indexing");
         Thread createIndex = new Thread(() -> {
@@ -181,6 +208,12 @@ public class ReadFile {
 //        threadPool.execute(createIndex);
     }
 
+    /**
+     * Adds the input vars to document buffer that writes them to Documents file in disk.
+     * @param filePath
+     * @param startLineNum
+     * @param numOfLines
+     */
     private void createDoc(Path filePath, int startLineNum, int numOfLines) {
         String fileName = extractFileName(filePath.toString());
         String documentLine = fileName + " " + startLineNum + " " + numOfLines;

@@ -312,8 +312,6 @@ public class DocumentTokenList implements ITokenList {
     protected String removeUnnecessaryChars(String sToken) {
         if(sToken==null || sToken.equals(""))
             return null;
-        if(sToken.equals("Beijing"))
-            sToken=sToken;
         int firstNecessary = 0;
         int lastNecessary = sToken.length()-1;
         //find first necessary index
