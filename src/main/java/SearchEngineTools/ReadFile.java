@@ -210,9 +210,9 @@ public class ReadFile {
 
     /**
      * Adds the input vars to document buffer that writes them to Documents file in disk.
-     * @param filePath
-     * @param startLineNum
-     * @param numOfLines
+     * @param filePath- the file path.
+     * @param startLineNum- the line that the document start in.
+     * @param numOfLines- number of the document lines.
      */
     private void createDoc(Path filePath, int startLineNum, int numOfLines) {
         String fileName = extractFileName(filePath.toString());
@@ -226,6 +226,9 @@ public class ReadFile {
         }
     }
 
+    /**
+     * Writing the documents index to file Documents in disk.
+     */
     private void writeDocumentsToDisk() {
         String fileName;
         if(useStemming)
@@ -245,6 +248,11 @@ public class ReadFile {
         }
     }
 
+    /**
+     * Extract and returns the input path file name.
+     * @param path- the file path.
+     * @return -the input path file name.
+     */
     private String extractFileName(String path) {
         String[] splitPath;
         String fileName;
@@ -253,6 +261,9 @@ public class ReadFile {
         return fileName;
     }
 
+    /**
+     * Deleting previous blocks.
+     */
     public static void deletePrevFiles() {
         File dir = new File("blocks");
         for (File file : dir.listFiles())
@@ -260,49 +271,10 @@ public class ReadFile {
                 file.delete();
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////
-    /////***this functions may be moved to the Parse class.***////////////////////////
-
-    public List<String> readDocument(String path) {
-        List<String> lineList = null;
-        try {
-            lineList = Files.readAllLines(Paths.get(path), Charset.forName("UTF-8"));
-
-        } catch (IOException e) {
-            //for foemer file coding.
-            try {
-                lineList = Files.readAllLines(Paths.get(path), Charset.forName("ISO-8859-1"));
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-        }
-        return extractDocText(lineList);
-
-
-    }
-
-    public List<String> extractDocText(List<String> lineList) {
-        List<String> fileText = new ArrayList<>();
-        boolean isText = false;
-        for (int i = 0; i < lineList.size(); i++) {
-            String line = lineList.get(i);
-            try {
-                if (line.equals("<TEXT>")) {
-                    isText = true;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            if (line.equals("</TEXT>"))
-                isText = false;
-            if (isText)
-                fileText.add(line);
-        }
-        if (!fileText.isEmpty())
-            fileText.remove(0);
-        return fileText;
-    }
-
+    /**
+     * Reads the stop words into the stopWords var.
+     * @param filePath- the path of the stop words.
+     */
     private void readStopWords(File filePath) {
         BufferedReader br = null;
         FileReader fr = null;
@@ -336,6 +308,9 @@ public class ReadFile {
         }
     }
 
+    /**
+     * Clears all the class data structures.
+     */
     public void clear() {
         stopWords.clear();
     }
