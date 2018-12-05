@@ -1,4 +1,4 @@
-package View;
+package Test;
 
 import Controller.Controller;
 import SearchEngineTools.ParsingTools.Parse;
@@ -44,7 +44,7 @@ public class ParseTest extends Application {
         for (int i = 0; i < saTextToParse.length; i++) {
             lsTextToParse.add(saTextToParse[i]);
         }
-        Collection<ATerm> parseResults = parser.parseDocument(lsTextToParse);
+        Collection<ATerm> parseResults = parser.parseText(lsTextToParse);
         StringBuilder resultsToDisplay = new StringBuilder();
         for (ATerm term:parseResults) {
             resultsToDisplay.append(term.toString()).append("\n");

@@ -8,7 +8,7 @@ import java.util.BitSet;
 
 public class MyTest {
     public static void main(String[] args){
-        ReadFile readFile=new ReadFile();
+        /*ReadFile readFile=new ReadFile();
         readFile.deletePrevFiles();
         long startTime = System.nanoTime();
         int numOfFiles=readFile.listAllFiles("/Users/tamiryaffe/Desktop/corpus");
@@ -17,6 +17,6 @@ public class MyTest {
         long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
 //        System.out.println("milliseconds: "+ duration/1000000);
         System.out.println("seconds: "+duration/1000000000);
-        System.out.println(numOfFiles);
+        System.out.println(numOfFiles);*/
     }
 }

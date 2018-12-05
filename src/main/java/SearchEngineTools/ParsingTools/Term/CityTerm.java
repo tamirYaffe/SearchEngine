@@ -13,20 +13,29 @@ public class CityTerm extends WordTerm {
     private ATerm statePopulation;
     private ATerm countryCurrency;
     private List<Integer> positions;
-    boolean isOrigin=false;
     private Country country;
 
+    /**
+     * Get positions of this term in document
+     * @return
+     */
     public List<Integer> getPositions(){
         return positions;
     }
 
 
+    /**
+     * CityTerm, represents a city
+     * @param cityName cityName
+     * @param country country of city
+     */
     public CityTerm(String cityName,Country country){
         super(cityName);
         this.country=country;
         addPopulationTerm(country);
         addCurrency(country);
         positions = new ArrayList<>();
+        isNumber=false;
     }
 
 
@@ -56,23 +65,38 @@ public class CityTerm extends WordTerm {
         return term;
     }
 
-
+    /**
+     * get population of country
+     * @return
+     */
     public String getStatePopulation(){
         if(statePopulation==null)
             addPopulationTerm(country);
         return statePopulation.getTerm();
     }
 
+    /**
+     * get currency of country
+     * @return
+     */
     public String getCountryCurrency(){
         if(countryCurrency==null)
             addCurrency(country);
         return countryCurrency.getTerm();
     }
 
+    /**
+     * add position of term in document
+     * @param position
+     */
     public void addPosition(int position){
         positions.add(position);
     }
 
+    /**
+     * add all positions of other CityTerm
+     * @param other
+     */
     public void addAllPositions(CityTerm other){
         this.positions.addAll(other.positions);
     }
@@ -85,22 +109,23 @@ public class CityTerm extends WordTerm {
         return false;
     }
 
-    public void setAsOrigin(){
-        isOrigin=true;
-    }
-
-    public boolean isOrigin(){
-        return isOrigin;
-    }
 
     public String toString(){
-        String toReturn ="CityTerm:"+getTerm()+"~"+"\nOccurences: "+(getOccurrences())+"\nis origin:"+isOrigin+
+        String toReturn ="CityTerm:"+getTerm()+"~"+"\nOccurences: "+(getOccurrences())+
                 "\nCountry: "+country.getName()+"\nPopulation size: "+getStatePopulation()+
                 "\nCurrency: "+getCountryCurrency()+"\nPositions:";
         for (int i = 0; i < positions.size(); i++) {
             toReturn+=","+positions.get(i);
         }
         return toReturn;
+    }
+
+    /**
+     * get name of country the city is located in
+     * @return
+     */
+    public String getCountryName(){
+        return country.getName();
     }
 
 }

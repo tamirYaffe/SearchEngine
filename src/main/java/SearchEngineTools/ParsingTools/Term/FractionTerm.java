@@ -13,9 +13,15 @@ public class FractionTerm extends ATerm {
         return numerator;
     }
 
+    /**
+     * Constructor for Fraction Term Clas
+     * @param numerator numerator
+     * @param denominator denominator
+     */
     public FractionTerm(NumberTerm numerator, NumberTerm denominator){
         this.numerator = numerator;
         this.denominator = denominator;
+        isNumber = true;
     }
 
 
