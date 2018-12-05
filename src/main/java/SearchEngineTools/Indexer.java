@@ -78,7 +78,7 @@ public class Indexer {
         while (terms.hasNext()) {
             ATerm aTerm = terms.next();
             if (aTerm.getTerm().equals("."))
-                System.out.println("liad");
+                continue;
             if (aTerm instanceof WordTerm && Character.isLetter(aTerm.getTerm().charAt(0)))
                 handleCapitalWord(aTerm);
             String term = aTerm.getTerm();
