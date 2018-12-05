@@ -24,10 +24,14 @@ public class DocumentTokenList implements ITokenList {
 
     Collection<Character> currencySymbols;
 
+    /**
+     * Constructer for the Document TokenList Class
+     */
     public DocumentTokenList(){
         appended = new ArrayList<>();
         prepended = new ArrayList<>();
     }
+
     @Override
     public Token peek() {
         if(isEmpty())
@@ -44,6 +48,9 @@ public class DocumentTokenList implements ITokenList {
         return token;
     }
 
+    /**
+     * set the next term
+     */
     private void setNext(){
         if(!prepended.isEmpty()){
             next = prepended.remove(0);
@@ -57,6 +64,10 @@ public class DocumentTokenList implements ITokenList {
 
     }
 
+    /**
+     * get the next token from the current document
+     * @return
+     */
     private Token getNextToken(){
         Token token=null;
         //get next line
@@ -71,6 +82,10 @@ public class DocumentTokenList implements ITokenList {
         return token;
     }
 
+    /**
+     * Gets the next token from current line
+     * @return
+     */
     private Token getNextTokenFromCurrentLine() {
         int indexOfFirstSpace = currentLine.indexOf(' ');
         String tokenString;
@@ -91,6 +106,10 @@ public class DocumentTokenList implements ITokenList {
         return toReturn;
     }
 
+    /**
+     * gets the next text line, sets cityTerm
+     * @return
+     */
     protected String getNextTextLine() {
 
         if(isText){
@@ -119,6 +138,10 @@ public class DocumentTokenList implements ITokenList {
         return null;
     }
 
+    /**
+     * extracts cityTerm frim line with appropriate tag
+     * @param currentLine
+     */
     private void extractCityTerm(String currentLine) {
         String lineWithoutTag = currentLine.length()>=10 ? currentLine.substring(9) : null;
         if(lineWithoutTag==null)
@@ -170,6 +193,10 @@ public class DocumentTokenList implements ITokenList {
         appended.addAll(tokens);
     }
 
+    /**
+     * checks that all Tokens in list are valid, removes invalid Tokens
+     * @param tokens
+     */
     private void validateTokensList(List<Token> tokens){
         for (int i = 0; i < tokens.size(); i++) {
             Token token = tokens.get(i);
@@ -236,13 +263,20 @@ public class DocumentTokenList implements ITokenList {
         setNext();
     }
 
+    /**
+     * removes unnecessary characters from beggining and end of string
+     * @param sToken
+     * @return
+     */
     protected String removeUnnecessaryChars(String sToken) {
         if(sToken==null || sToken.equals(""))
             return null;
         int firstNecessary = 0;
         int lastNecessary = sToken.length()-1;
         //find first necessary index
-        boolean foundFirstIndex = (Character.isDigit(sToken.charAt(firstNecessary)) || Character.isLetter(sToken.charAt(firstNecessary)));
+        boolean foundFirstIndex = (Character.isDigit(sToken.charAt(firstNecessary)) || Character.isLetter(sToken.charAt(firstNecessary))
+                || (sToken.length()>1 && currencySymbols.contains(sToken.charAt(firstNecessary)) && Character.isDigit(sToken.charAt(firstNecessary+1)))
+                || (sToken.length()==1 && '%'==sToken.charAt(0)));
         while (!foundFirstIndex && firstNecessary<sToken.length()){
             foundFirstIndex = (Character.isDigit(sToken.charAt(firstNecessary)) || Character.isLetter(sToken.charAt(firstNecessary)))||
                     (firstNecessary>sToken.length()-1 && delimitersToSplitWordBy.contains(sToken.charAt(firstNecessary)) && Character.isDigit(sToken.charAt(firstNecessary+1)));
@@ -251,7 +285,9 @@ public class DocumentTokenList implements ITokenList {
         }
         if(firstNecessary>lastNecessary)
             return null;
-        while (lastNecessary>0 && !(Character.isDigit(sToken.charAt(lastNecessary)) ||//first digit is not digit
+        while (lastNecessary>0 &&
+                !(Character.isDigit(sToken.charAt(lastNecessary-1))&& sToken.charAt(lastNecessary)=='%')&&
+                !(Character.isDigit(sToken.charAt(lastNecessary)) ||//first digit is not digit
                 Character.isLetter(sToken.charAt(lastNecessary)) ||//first digit is not letter
                 currencySymbols.contains(""+sToken.charAt(lastNecessary)))){ //first digit is not currency
             lastNecessary--;
