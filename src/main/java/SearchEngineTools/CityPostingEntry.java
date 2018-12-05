@@ -3,23 +3,28 @@ package SearchEngineTools;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A class that represents a city index posting list entry.
+ */
 public class CityPostingEntry {
+    /**
+     *  docID- the entry docId the city appeared.
+     *  positions- list of positions in which the city appeared.
+     */
     private int docID;
     private List<String> positions;
 
+    /**
+     * default constructor for class parameters
+     * @param docID-the entry docId the city appeared.
+     * @param positions-list of positions in which the city appeared.
+     */
     public CityPostingEntry(int docID, List<Integer>positions){
         this.docID=docID;
         this.positions=new ArrayList<>();
         for(int position:positions){
             this.positions.add(0,""+position);
         }
-    }
-    public int compareTo(CityPostingEntry other){
-        return this.docID-other.docID;
-    }
-
-    public int getSizeInBytes() {
-        return 0;
     }
 
     @Override

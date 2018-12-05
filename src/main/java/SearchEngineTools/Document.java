@@ -4,12 +4,16 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A class that represents a document.
+ *
+ */
 public class Document {
     //static vars
     public static String corpusPath;
     private static boolean useStemming;
 
-    private int docNum;
+    private int docID;
     private String path;
     private Long startLine;
     private Long numOfLines;
@@ -17,13 +21,20 @@ public class Document {
     private int numOfUniqeTerms;
     private  String docCity;
 
-
-    public Document(int docNum) {
-        this.docNum=docNum;
+    /**
+     * A constructor for docId.
+     * @param docID- the document line number in the Documents file.
+     */
+    public Document(int docID) {
+        this.docID =docID;
     }
 
+    /**
+     * Returns the document lines.
+     * @return- the document lines.
+     */
     public List<String> getDocumentsLines() {
-        readDocPointerInfo();
+        loadDocPointerInfo();
         List<String> fileList = new ArrayList<>();
         BufferedReader reader;
         try {
@@ -41,27 +52,38 @@ public class Document {
         return fileList;
     }
 
-    private void readDocPointerInfo() {
+    /**
+     * Loads the document startLine, numOfLines and path from documentsInfo file to class vars.
+     */
+    private void loadDocPointerInfo() {
         String[] line ;
         try (BufferedReader br = new BufferedReader(new FileReader("Documents.txt"))) {
-            for (int i = 0; i < docNum-1; i++)
+            for (int i = 0; i < docID -1; i++)
                 br.readLine();
             line=br.readLine().split(" ");
             String fileName=line[0];
             startLine= Long.valueOf(line[1]);
             numOfLines= Long.valueOf(line[2]);
             path=corpusPath+fileName;
-            getDocumentsLines();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Updates the documents max_tf and numOfUniqeTerms vars.
+     * @param termOccurrences- the current term number of occurrences in the document.
+     */
     public void updateDocInfo(int termOccurrences) {
         if(termOccurrences>max_tf)
             max_tf=termOccurrences;
         numOfUniqeTerms++;
     }
+
+    /**
+     * Writes the document info(max_tf, numOfUniqeTerms) and docCity if exists to DocumentsInfo file.
+     * @param postingFilesPath- path of posting files.
+     */
     public void writeDocInfoToDisk(String postingFilesPath){
         String fileSeparator=System.getProperty("file.separator");
         String fileName;
@@ -84,6 +106,7 @@ public class Document {
         }
     }
 
+    //<editor-fold desc="setters">
     public void setDocCity(String docCity) {
         this.docCity = docCity;
     }
@@ -91,4 +114,5 @@ public class Document {
     public static void setUseStemming(boolean useStemming) {
         Document.useStemming = useStemming;
     }
+    //</editor-fold>
 }

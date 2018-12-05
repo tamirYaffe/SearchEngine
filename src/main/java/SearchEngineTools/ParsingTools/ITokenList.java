@@ -55,14 +55,6 @@ public interface ITokenList {
     boolean has(int index);
 
     /**
-     * Initialize token list
-     * @param documentLines
-     * @param currencySymbols
-     * @param delimitersToSplitWordBy
-     */
-    void initialize(List<String> documentLines, Collection<Character> currencySymbols, Collection<Character> delimitersToSplitWordBy);
-
-    /**
      * Add Valid tokens to list. Will not check to see if tokens contain value words
      * @param toPrepend
      */

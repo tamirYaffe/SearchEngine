@@ -36,6 +36,9 @@ public class Parse {
     //stop words to be removed
     protected Collection<String> stopWords;
 
+    //stop words that are unique to list
+    protected Collection<String> uniqueStopWords = new ArrayList<>();
+
     //characters to be removed from beginning and end of words
     private Collection<Character> necessaryChars;
 
@@ -99,6 +102,8 @@ public class Parse {
     private Collection<String> getMonthWords(){
         return months.keySet();
     }
+
+    private static Collection<String> allDocumentLanguages;
 
 
 
@@ -201,20 +206,41 @@ public class Parse {
     public Collection<ATerm> parseDocument(List<String> document){
         if(tokenList==null)
             tokenList = new DocumentTokenList();
-        tokenList.initialize(document,currencySymbols,delimitersToSplitWordBy);
+        tokenList.initialize(document,currencySymbols,delimitersToSplitWordBy,uniqueStopWords);
         List<String> cityNames = new ArrayList<>();
         CityTerm documentCity = tokenList.getCityTerm();
         Map<String,ATerm> occurrencesAndPositionsOfTerms = new HashMap<>();
+        List<String> removedFromUniqueStopWords = new ArrayList<>();
+        String documentLanguage = tokenList.getDocLanguage();
+        addDocumentLanguage(documentLanguage);
         if(documentCity!=null) {
-            cityNames.add(documentCity.getTerm());
+            String cityTerm = documentCity.getTerm();
+            cityNames.add(cityTerm);
+            if(uniqueStopWords!=null && uniqueStopWords.contains(cityTerm.toLowerCase())){
+                uniqueStopWords.remove(cityTerm.toLowerCase());
+                removedFromUniqueStopWords.add(cityTerm.toLowerCase());
+            }
             occurrencesAndPositionsOfTerms.put(documentCity.getTerm(),documentCity);
         }
         setCityNames(cityNames);
         Collection<ATerm> toReturn = parse(tokenList,occurrencesAndPositionsOfTerms);
         tokenList.clear();
         this.cityNames=null;
+        uniqueStopWords.addAll(removedFromUniqueStopWords);
         return toReturn;
 
+    }
+
+    public Collection<String> getAllDocumentLanguages(){
+        return allDocumentLanguages;
+    }
+    private void addDocumentLanguage(String language){
+        if(language==null)
+            return;
+        if(allDocumentLanguages==null)
+            allDocumentLanguages = new HashSet<>();
+        String languageUpperCase = language.toUpperCase();
+        if(!allDocumentLanguages.contains(languageUpperCase));
     }
 
     /**
@@ -223,9 +249,9 @@ public class Parse {
      * @return all unique terms
      */
     public Collection<ATerm> parseText(List<String> text){
-        ITokenList tokenList = new TextTokenList();
+        TextTokenList tokenList = new TextTokenList();
         cityNames=new ParsingHashMap();
-        tokenList.initialize(text,currencySymbols,delimitersToSplitWordBy);
+        tokenList.initialize(text,currencySymbols,delimitersToSplitWordBy,uniqueStopWords);
         return parse(tokenList);
     }
 
@@ -896,6 +922,34 @@ public class Parse {
 
     public void setStopWords(Collection<String> stopWords){
         this.stopWords=stopWords;
+        setUniqueStopWords();
+    }
+
+    private void setUniqueStopWords(){
+        this.uniqueStopWords = new HashSet<>(stopWords.size());
+        uniqueStopWords.addAll(stopWords);
+        List<Collection<String>> toRemoveFrom = new ArrayList<>();
+        toRemoveFrom.add(this.percentWords);
+        if(cityNames!=null)
+            toRemoveFrom.add(this.cityNames.keySet());
+        toRemoveFrom.add(this.months.keySet());
+        toRemoveFrom.add(this.valuesAfterNumber.keySet());
+        List<String> currencySymbols = new ArrayList<>();
+        for (char c:this.currencySymbols) {
+            currencySymbols.add(""+c);
+        }
+        toRemoveFrom.add(currencySymbols);
+        for (Collection<String> c:toRemoveFrom) {
+            removeFromUniqueStopWords(uniqueStopWords,c);
+        }
+    }
+
+    private static void removeFromUniqueStopWords(Collection<String> removeFrom,Collection<String> ToRemove){
+        for (String s : ToRemove){
+            String lowerCase = s.toLowerCase();
+            if(removeFrom.contains(lowerCase))
+                removeFrom.remove(lowerCase);
+        }
     }
 
     public void setCityNames(Collection<String> cityNames){
