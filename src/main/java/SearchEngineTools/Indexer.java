@@ -13,17 +13,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Indexer {
     //dictionary that holds term->idf. used also for word check for big first word.
-    protected Map<String, Pair<Integer, Integer>> dictionary;
+    private Map<String, Pair<Integer, Integer>> dictionary;
     //dictionary and posting list in one hash
-    protected Map<String, PostingList> tempInvertedIndex;
+    private Map<String, PostingList> tempInvertedIndex;
     //dictionary and posting list in one hash for cities.
-    protected Map<String, Pair<CityTerm, List<CityPostingEntry>>> tempCityInvertedIndex;
+    private Map<String, Pair<CityTerm, List<CityPostingEntry>>> tempCityInvertedIndex;
 
 
-    protected int memoryBlockSize;
-    protected int usedMemory;
-    protected int termsNum;
-    protected String postingFilesPath;
+    private int memoryBlockSize;
+    private int usedMemory;
+    private int termsNum;
+    private String postingFilesPath;
+    private boolean useStemming;
 
     public void setDictionary(Map<String, Pair<Integer, Integer>> dictionary) {
         this.dictionary = dictionary;
@@ -120,7 +121,6 @@ public class Indexer {
         //System.out.println("finish: " + docID);
     }
 
-
     public void mergeBlocks() throws IOException {
         System.out.println("starting merge");
         System.out.println("dictionary size: " + getDictionarySize());
@@ -128,7 +128,12 @@ public class Indexer {
         BufferedReader[] readers = new BufferedReader[blockNum.get()];
         PostingListComparator comparator = new PostingListComparator();
         PriorityQueue<Pair<String, Integer>> queue = new PriorityQueue<>(comparator);
-        String pathName = postingFilesPath + fileSeparator + "postingLists.txt";
+        String fileName;
+        if(useStemming)
+            fileName="postingListsStemming.txt";
+        else
+            fileName="postingLists.txt";
+        String pathName = postingFilesPath + fileSeparator + fileName;
         File file = new File(pathName);
         FileWriter fw = new FileWriter(file, true);
         BufferedWriter bw = new BufferedWriter(fw);
@@ -136,7 +141,7 @@ public class Indexer {
         List<String> bufferPostingLists = new ArrayList<>();
         //create readers and init queue.
         for (int i = 0; i < blockNum.get(); i++) {
-            String fileName = "blocks" + fileSeparator + "block" + i + ".txt";
+            fileName = "blocks" + fileSeparator + "block" + i + ".txt";
             readers[i] = new BufferedReader(new FileReader(fileName));
             queue.add(new Pair<>(readers[i].readLine(), i));
         }
@@ -324,7 +329,7 @@ public class Indexer {
         return term + ";" + PostingList.mergeLists(postingList_1, postingList_2);
     }
 
-    protected void handleCapitalWord(ATerm aTerm) {
+    private void handleCapitalWord(ATerm aTerm) {
         String term = aTerm.getTerm();
         String termLowerCase = term.toLowerCase();
         String termUpperCase = term.toUpperCase();
@@ -362,7 +367,12 @@ public class Indexer {
     }
 
     private void sortAndWriteDictionaryToDisk() {
-        String pathName = postingFilesPath + fileSeparator + "dictionary.txt";
+        String fileName;
+        if(useStemming)
+            fileName="dictionaryStemming.txt";
+        else
+            fileName="dictionary.txt";
+        String pathName = postingFilesPath + fileSeparator + fileName;
         File file = new File(pathName);
         try (FileWriter fw = new FileWriter(file);
              BufferedWriter bw = new BufferedWriter(fw)) {
@@ -381,7 +391,7 @@ public class Indexer {
         }
     }
 
-    protected void addToCityIndex(ATerm aTerm, int docID) {
+    private void addToCityIndex(ATerm aTerm, int docID) {
         CityTerm cityTerm = (CityTerm) aTerm;
         List<CityPostingEntry> postingsList;
         List<Integer> positions = cityTerm.getPositions();
@@ -398,7 +408,12 @@ public class Indexer {
 
 
     public void writeCityIndex() {
-        String pathName = postingFilesPath + fileSeparator + "cityIndex.txt";
+        String fileName;
+        if(useStemming)
+            fileName="cityIndexStemming.txt";
+        else
+            fileName="cityIndex.txt";
+        String pathName = postingFilesPath + fileSeparator + fileName;
         File file = new File(pathName);
         try (FileWriter fw = new FileWriter(file);
              BufferedWriter bw = new BufferedWriter(fw)) {
@@ -429,6 +444,10 @@ public class Indexer {
         dictionary.clear();
         tempInvertedIndex.clear();
         tempCityInvertedIndex.clear();
+    }
+
+    public void setIsStemming(boolean useStemming) {
+        this.useStemming=useStemming;
     }
     //</editor-fold>
 }

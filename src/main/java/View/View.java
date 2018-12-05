@@ -1,6 +1,7 @@
 package View;
 
 import Controller.Controller;
+import SearchEngineTools.Document;
 import SearchEngineTools.Indexer;
 import SearchEngineTools.ReadFile;
 import javafx.scene.control.*;
@@ -27,6 +28,8 @@ public class View {
     private ReadFile readFile;
     private Indexer indexer;
     private String fileSeparator=System.getProperty("file.separator");
+    private boolean useStemming=false;
+    private Thread runningIndex;
 
 
     //fxml widgets
@@ -71,17 +74,19 @@ public class View {
             actionAllButtons(false);
             return;
         }
-        Thread thread=new Thread(()->{
+        runningIndex=new Thread(()->{
             String corpusPath=tf_corpusPath.getText();
             String postingFilesPath=tf_postingListPath.getText();
-            boolean useStemming=false;
             if(cb_useStemming.isSelected())
                 useStemming=true;
+            Document.setUseStemming(useStemming);
             indexer.setPostingFilesPath(postingFilesPath);
+            indexer.setIsStemming(useStemming);
             readFile=new ReadFile(indexer, corpusPath,postingFilesPath,useStemming);
             readFile.deletePrevFiles();
             long startTime = System.nanoTime();
             int numOfFiles=readFile.listAllFiles();
+            indexer.writeCityIndex();
             long endTime = System.nanoTime();
             long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
 
@@ -89,13 +94,21 @@ public class View {
             System.out.println("seconds: "+duration/1000000000);
             System.out.println(numOfFiles);
         });
+        runningIndex.start();
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Started Indexing...");
+        alert.setHeaderText(null);
+        alert.setContentText("Please wait until buttons become enable again.");
+        alert.showAndWait();
+        Thread thread=new Thread(()->{
+            try {
+                runningIndex.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            actionAllButtons(false);
+        });
         thread.start();
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        actionAllButtons(false);
     }
 
     public void onClickLoadDictionary(){
@@ -103,7 +116,12 @@ public class View {
         Map<String, Pair<Integer,Integer>> dictionary=new HashMap<>();
         int postingListPointer=0;
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(tf_postingListPath.getText()+fileSeparator+"dictionary.txt"));
+            String fileName;
+            if(useStemming)
+                fileName="dictionaryStemming.txt";
+            else
+                fileName="dictionary.txt";
+            BufferedReader reader = new BufferedReader(new FileReader(tf_postingListPath.getText()+fileSeparator+fileName));
             String line;
             while (( line=reader.readLine())!=null){
                 dictionary.put(line.split(":")[0],new Pair<>(Integer.valueOf(line.split(":")[1]),postingListPointer++));
@@ -120,8 +138,13 @@ public class View {
     public void onClickShowDictionary(){
         actionAllButtons(true);
         try {
-            String fileName=tf_postingListPath.getText()+fileSeparator+"dictionary.txt";
-            BufferedReader reader = new BufferedReader(new FileReader(fileName));
+            String fileName;
+            if(useStemming)
+                fileName="dictionaryStemming.txt";
+            else
+                fileName="dictionary.txt";
+            String filePath=tf_postingListPath.getText()+fileSeparator+fileName;
+            BufferedReader reader = new BufferedReader(new FileReader(filePath));
             jTextArea=new JTextArea();
             jTextArea.read(reader,null);
             JFrame frame = new JFrame("TextArea Load");
@@ -162,6 +185,9 @@ public class View {
         btn_loadDictionary.setDisable(disable);
         btn_showDictionary.setDisable(disable);
         btn_startIndex.setDisable(disable);
+        cb_useStemming.setDisable(disable);
+        tf_corpusPath.setDisable(disable);
+        tf_postingListPath.setDisable(disable);
     }
 
     private void displayErrorMessage(String msg) {

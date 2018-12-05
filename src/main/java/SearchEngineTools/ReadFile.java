@@ -18,12 +18,13 @@ import java.util.stream.Stream;
 
 public class ReadFile {
     private static int numOfDocs;
-    protected Parse parse;
-    protected Indexer indexer;
-    protected HashSet<String> stopWords = new HashSet<>();
+    private Parse parse;
+    private Indexer indexer;
+    private HashSet<String> stopWords = new HashSet<>();
     private String corpusPath;
     private String postingFilesPath;
     private String fileSeparator = System.getProperty("file.separator");
+    private boolean useStemming;
 
     //for documents
     private List<String> documentsBuffer = new ArrayList<>();
@@ -43,6 +44,7 @@ public class ReadFile {
             parse = new ParseWithStemming();
         else
             parse = new Parse();
+        this.useStemming=useStemming;
     }
 
     public int listAllFiles() {
@@ -83,7 +85,7 @@ public class ReadFile {
         return numOfDocs;
     }
 
-    protected void createStopWords(String path) {
+    private void createStopWords(String path) {
         File root = new File(path);
         String fileName = "stop_words.txt";
         try {
@@ -194,7 +196,12 @@ public class ReadFile {
     }
 
     private void writeDocumentsToDisk() {
-        String pathName = postingFilesPath + fileSeparator + "Documents.txt";
+        String fileName;
+        if(useStemming)
+            fileName="DocumentsStemming.txt";
+        else
+            fileName="Documents.txt";
+        String pathName = postingFilesPath + fileSeparator +fileName;
         File file = new File(pathName);
         try (FileWriter fw = new FileWriter(file, true);
              BufferedWriter bw = new BufferedWriter(fw)) {

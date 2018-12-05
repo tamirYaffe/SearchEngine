@@ -7,6 +7,7 @@ import java.util.List;
 public class Document {
     //static vars
     public static String corpusPath;
+    private static boolean useStemming;
 
     private int docNum;
     private String path;
@@ -63,7 +64,12 @@ public class Document {
     }
     public void writeDocInfoToDisk(String postingFilesPath){
         String fileSeparator=System.getProperty("file.separator");
-        String pathName=postingFilesPath+fileSeparator+"DocumentsInfo.txt";
+        String fileName;
+        if(useStemming)
+            fileName="DocumentsInfoStemming.txt";
+        else
+            fileName="DocumentsInfo.txt";
+        String pathName=postingFilesPath+fileSeparator+fileName;
         File file = new File(pathName);
         try(FileWriter fw = new FileWriter(file, true);
             BufferedWriter bw = new BufferedWriter(fw);
@@ -80,5 +86,9 @@ public class Document {
 
     public void setDocCity(String docCity) {
         this.docCity = docCity;
+    }
+
+    public static void setUseStemming(boolean useStemming) {
+        Document.useStemming = useStemming;
     }
 }
