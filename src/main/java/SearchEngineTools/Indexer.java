@@ -13,17 +13,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Indexer {
     //dictionary that holds term->idf. used also for word check for big first word.
-    private Map<String, Pair<Integer, Integer>> dictionary;
+    protected Map<String, Pair<Integer, Integer>> dictionary;
     //dictionary and posting list in one hash
-    private Map<String, PostingList> tempInvertedIndex;
+    protected Map<String, PostingList> tempInvertedIndex;
     //dictionary and posting list in one hash for cities.
-    private Map<String, Pair<CityTerm, List<CityPostingEntry>>> tempCityInvertedIndex;
+    protected Map<String, Pair<CityTerm, List<CityPostingEntry>>> tempCityInvertedIndex;
 
 
-    private int memoryBlockSize;
-    private int usedMemory;
-    private int termsNum;
-    private String postingFilesPath;
+    protected int memoryBlockSize;
+    protected int usedMemory;
+    protected int termsNum;
+    protected String postingFilesPath;
 
     public void setDictionary(Map<String, Pair<Integer, Integer>> dictionary) {
         this.dictionary = dictionary;
@@ -119,6 +119,7 @@ public class Indexer {
         document.writeDocInfoToDisk(postingFilesPath);
         //System.out.println("finish: " + docID);
     }
+
 
     public void mergeBlocks() throws IOException {
         System.out.println("starting merge");
@@ -323,7 +324,7 @@ public class Indexer {
         return term + ";" + PostingList.mergeLists(postingList_1, postingList_2);
     }
 
-    private void handleCapitalWord(ATerm aTerm) {
+    protected void handleCapitalWord(ATerm aTerm) {
         String term = aTerm.getTerm();
         String termLowerCase = term.toLowerCase();
         String termUpperCase = term.toUpperCase();
@@ -380,7 +381,7 @@ public class Indexer {
         }
     }
 
-    private void addToCityIndex(ATerm aTerm, int docID) {
+    protected void addToCityIndex(ATerm aTerm, int docID) {
         CityTerm cityTerm = (CityTerm) aTerm;
         List<CityPostingEntry> postingsList;
         List<Integer> positions = cityTerm.getPositions();

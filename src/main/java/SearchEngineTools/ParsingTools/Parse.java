@@ -192,12 +192,6 @@ public class Parse {
 
     /////////////////////////////////////////////
 
-
-    /**
-     * Parse document with tags
-     * @param document lines of document
-     * @return all terms
-     */
     public Collection<ATerm> parseDocument(List<String> document){
         if(tokenList==null)
             tokenList = new DocumentTokenList();
@@ -217,11 +211,6 @@ public class Parse {
 
     }
 
-    /**
-     * parse text, without tags
-     * @param text text to parse
-     * @return all unique terms
-     */
     public Collection<ATerm> parseText(List<String> text){
         ITokenList tokenList = new TextTokenList();
         cityNames=new ParsingHashMap();
@@ -229,23 +218,12 @@ public class Parse {
         return parse(tokenList);
     }
 
-    /**
-     * Parses tokenlist
-     * @param tokenList
-     * @return
-     */
     public Collection<ATerm> parse(ITokenList tokenList){
         //Map<ATerm,OccurrencesListPair> occurrencesOfTerms = new HashMap<>();
         Map<String,ATerm> occurrencesAndPositionsOfTerms = new HashMap<>();
         return parse(tokenList,occurrencesAndPositionsOfTerms);
     }
 
-    /**
-     * Parse tokenlist
-     * @param tokenList
-     * @param occurrencesAndPositionsOfTerms
-     * @return
-     */
     private Collection<ATerm> parse(ITokenList tokenList, Map<String,ATerm> occurrencesAndPositionsOfTerms){
         addAllTermsToOccurrancesOfTerms(occurrencesAndPositionsOfTerms,tokenList);
         Collection<ATerm> toReturn = getFinalTermCollection(occurrencesAndPositionsOfTerms);
@@ -253,12 +231,7 @@ public class Parse {
     }
 
 
-    /**
-     * returns final collection from list
-     * @param occurrencesOfTerms
-     * @return
-     */
-    private static Collection<ATerm> getFinalTermCollection(Map<String, ATerm> occurrencesOfTerms) {
+    private Collection<ATerm> getFinalTermCollection(Map<String, ATerm> occurrencesOfTerms) {
         ArrayList<ATerm> toReturn = new ArrayList<>(occurrencesOfTerms.size());
         for (String termString:occurrencesOfTerms.keySet()) {
             ATerm term = occurrencesOfTerms.get(termString);
@@ -267,22 +240,12 @@ public class Parse {
         return toReturn;
     }
 
-    /**
-     * Adds all terms and their occurrences to list
-     * @param occurrencesOfTerms
-     * @param tokenList
-     */
     private void addAllTermsToOccurrancesOfTerms(Map<String, ATerm> occurrencesOfTerms, ITokenList tokenList) {
         while (!tokenList.isEmpty()){
             getNextTerm(occurrencesOfTerms,tokenList);
         }
     }
 
-    /**
-     * gets the next term from list, adds itto occurrences
-     * @param occurrencesOfTerms
-     * @param tokenList
-     */
     private void getNextTerm(Map<String,ATerm> occurrencesOfTerms,ITokenList tokenList){
         ATerm nextTerm = null;
         //if list is empty, no tokens
@@ -302,12 +265,6 @@ public class Parse {
             addWordTerm(tokenList, token,occurrencesOfTerms);
         }
     }
-
-    /**
-     * checks if s is a number
-     * @param s
-     * @return true if s is a number, false otherwise
-     */
     private boolean isNumber(String s){
         float [] floats = getNumberValue(s);
         return floats != null;
@@ -340,12 +297,6 @@ public class Parse {
         }
     }
 
-    /**
-     * add next number term from tokens list
-     * @param tokenList
-     * @param nextTerm
-     * @param occurrencesOfTerms
-     */
     private void AddNextNumberTerm(ITokenList tokenList, ATerm nextTerm, Map<String,ATerm> occurrencesOfTerms){
         //get next word
         if(!tokenList.isEmpty()) {
@@ -399,11 +350,6 @@ public class Parse {
         addTermToOccurrencesList(nextTerm,occurrencesOfTerms);
     }
 
-    /**
-     * checks if s is a fraction
-     * @param s
-     * @return true if s is a fraction, false otherwise
-     */
     private boolean isFraction(String s){
         String[] split = null;
         if(s.contains("/")) {
@@ -416,12 +362,6 @@ public class Parse {
         return isNumber(split[0]) && isNumber(split[1]);
     }
 
-
-    /**
-     * checks is s is an integer
-     * @param s
-     * @return true if s is an integer, false otherwise
-     */
     private boolean isInteger(CharSequence s){
         String string;
         if(s instanceof String)
@@ -442,12 +382,6 @@ public class Parse {
         }
     }
 
-    /**
-     * get next relevant term from tokens list, from parsing hashmap
-     * @param tokens
-     * @param toGetFrom
-     * @return string of term, position of term in tokens. Null if no such Token
-     */
     private static Pair<String, Integer> getNextRelevantTerm(ITokenList tokens, ParsingHashMap toGetFrom){
         Pair<String,Integer> toReturn = null;
         String toCheck = "";
@@ -483,11 +417,6 @@ public class Parse {
         return builder.toString();
     }
 
-    /**
-     * create fraction term from string s
-     * @param s valid fraction
-     * @return fraction term that corresponds to string s
-     */
     private FractionTerm getFractionTerm(String s){
         String[] split = s.split("/");
         NumberTerm numerator = new NumberTerm(split[0]);
@@ -495,11 +424,6 @@ public class Parse {
         return new FractionTerm(numerator,denominator);
     }
 
-    /**
-     * Add term to map of terms
-     * @param term term to add
-     * @param occurrencesList map to add to
-     */
     private void addTermToOccurrencesList(ATerm term, Map<String, ATerm> occurrencesList){
         if(term instanceof WordTerm){
             addWordTermToOccurrencesList((WordTerm) term,occurrencesList,Character.isLowerCase(term.getTerm().charAt(0)));
@@ -509,12 +433,6 @@ public class Parse {
         }
     }
 
-    /**
-     * Add term to map of terms. if no specialCase then add Term to Map w/out checking validity
-     * @param term
-     * @param occurrencesList
-     * @param noSpecialCase
-     */
     private void addTermToOccurrencesList(ATerm term,Map<String,ATerm> occurrencesList,boolean noSpecialCase){
         if(term instanceof WordTerm && !noSpecialCase)
             addTermToOccurrencesList(term,occurrencesList);
@@ -532,12 +450,6 @@ public class Parse {
         }
     }
 
-    /**
-     * Add word term to occurrences if terms
-     * @param term term to add
-     * @param occurrencesOfTerms map to add to
-     * @param isLowerCase true if word is lower case, false otherwise
-     */
     private void addWordTermToOccurrencesList(WordTerm term, Map<String,ATerm> occurrencesOfTerms, boolean isLowerCase){
         if(term instanceof CityTerm){
             addTermToOccurrencesList(term,occurrencesOfTerms,true);
@@ -567,12 +479,7 @@ public class Parse {
         }
     }
 
-    /**
-     * If Term is not a number, add creates trem and adds it to list
-     * @param tokens
-     * @param token
-     * @param occurrencesOfTerms
-     */
+
     private void addWordTerm(ITokenList tokens, Token token, Map<String, ATerm> occurrencesOfTerms){
         ATerm nextTerm = null;
         String tokenString = token.getTokenString();
@@ -668,11 +575,11 @@ public class Parse {
         return;
     }
 
-    /**
-     * Create Percentage Term from String s
-     * @param s
-     * @return
-     */
+    private boolean isCity(Token token) {
+        return cityNames.keySet().contains(token.getTokenString());
+    }
+
+
     private PercentageTerm getPercentageTerm(String s){
         if(isPercentage(s)){
             NumberTerm term = new NumberTerm(s.substring(0,s.length()-1));
@@ -685,25 +592,10 @@ public class Parse {
         return null;
     }
 
-    /**
-     *
-     * @param s
-     * @return
-     */
-    private boolean isPercentage(String s) {
-        if(s.length()>1 && s.charAt(s.length()-1)=='%'){
-            String number = s.substring(0,s.length()-1);
-            if(number!=null && number.length()>0 && isNumber(number))
-                return true;
-        }
-        return false;
+    private boolean isPercentage(String token) {
+        return (token.length()>1 && token.charAt(token.length()-1)=='%' && isNumber(token.substring(0,token.length()-1)));
     }
 
-    /**
-     * checks if string is currency
-     * @param s
-     * @return true if string is currency, false otherwise
-     */
     private boolean isCurrency(String s){
         if(s.length()>1){
             char first = s.charAt(0);
@@ -713,23 +605,9 @@ public class Parse {
         return false;
     }
 
-    /**
-     * Seperates terms into multiple terms if contain delimiters
-     * @param s
-     * @param tokens
-     * @return
-     */
     private List<ATerm> getFinalWordTermList(Token s, ITokenList tokens){
         return getFinalWordTermList(s,tokens,new ArrayList<>(0));
     }
-
-    /**
-     *
-     * @param token
-     * @param tokens
-     * @param delimitersToIgnore
-     * @return
-     */
     protected List<ATerm> getFinalWordTermList(Token token, ITokenList tokens, Collection<Character> delimitersToIgnore) {
         List<ATerm> toReturn = new ArrayList<>();
         String s = token.getTokenString();
@@ -789,6 +667,8 @@ public class Parse {
     }
 
     private boolean createCityTerm(Token token,Map<String, ATerm> occurrencesOfTerms,ITokenList tokenList) {
+        if(token.getTokenString().equals("FOR") && token.getPosition()==93)
+            token=token;
         Collection<String> cityTerms = cityNames.keySet();
         int longestTerm = cityNames.getWordsInLongestKey();
         List<Token> toPrepend = new ArrayList<>();
@@ -801,8 +681,11 @@ public class Parse {
             toPrepend.add(t);
         }
         if(foundCityTerm){
-            addCityToOccurenceList(cityName,token.getPosition(),occurrencesOfTerms);
+            addCityToOccurenceList(cityName, token.getPosition(), occurrencesOfTerms);
             return true;
+
+
+
         }
         else
             tokenList.prependValidTokens(toPrepend);

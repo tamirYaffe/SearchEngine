@@ -18,9 +18,9 @@ import java.util.stream.Stream;
 
 public class ReadFile {
     private static int numOfDocs;
-    private Parse parse;
-    private Indexer indexer;
-    private HashSet<String> stopWords = new HashSet<>();
+    protected Parse parse;
+    protected Indexer indexer;
+    protected HashSet<String> stopWords = new HashSet<>();
     private String corpusPath;
     private String postingFilesPath;
     private String fileSeparator = System.getProperty("file.separator");
@@ -83,7 +83,7 @@ public class ReadFile {
         return numOfDocs;
     }
 
-    private void createStopWords(String path) {
+    protected void createStopWords(String path) {
         File root = new File(path);
         String fileName = "stop_words.txt";
         try {
