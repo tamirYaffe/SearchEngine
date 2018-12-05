@@ -43,6 +43,8 @@ public class WordTerm extends ATerm {
 
 
     private void removePunctuation(){
+        if(term==null || term.length()<=1)
+            return;
         int beginIndex = 0;
         int endIndex = term.length()-1;
         boolean isRelevantBeginning = false;
