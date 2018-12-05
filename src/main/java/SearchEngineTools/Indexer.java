@@ -294,7 +294,7 @@ public class Indexer {
      *
      * @param queue - queue to get next posting list from.
      * @param readers - an array of buffered readers to read from blocks if necessary.
-     * @return - next posting list
+     * @return - next posting list from priority queue.
      * @throws IOException
      */
     private String getNextPostingList(PriorityQueue<Pair<String, Integer>> queue, BufferedReader[] readers) throws IOException {
@@ -321,6 +321,14 @@ public class Indexer {
         return postingList;
     }
 
+    /**
+     * Checks if there are posting lists in the Priority Queue that need to be merged.
+     * @param queue- the Priority Queue of posting lists.
+     * @param readers -an array of buffered readers to read from blocks if necessary.
+     * @param curPostingList- current posting list we got from the queue.
+     * @return - the currPosting list if there was no merge, otherwise returns the merged list.
+     * @throws IOException
+     */
     private String checkForMergeingPostingLines(PriorityQueue<Pair<String, Integer>> queue, BufferedReader[] readers, String curPostingList) throws IOException {
         if (queue.isEmpty())
             return curPostingList;
@@ -335,6 +343,12 @@ public class Indexer {
         return curPostingList;
     }
 
+    /**
+     * Returns the merged posting list from the two i.nput posting lists.
+     * @param postingList1- posting list to merge
+     * @param postingList2- posting list to merge.
+     * @return - the merged posting list from the two i.nput posting lists.
+     */
     private String mergePostingLists(String postingList1, String postingList2) {
         String term = extractTerm(postingList1);
         postingList1 = postingList1.substring(postingList1.indexOf(";") + 1);
@@ -347,6 +361,12 @@ public class Indexer {
         return term + ";" + postingList1 + " " + postingList2;
     }
 
+    /**
+     * Returns the merged posting list from the two input posting lists. (for threads use)
+     * @param postingList1- posting list to merge
+     * @param postingList2- posting list to merge.
+     * @return - the merged posting list from the two i.nput posting lists.
+     */
     private String mergeAndSortPostingLists(String postingList1, String postingList2) {
         String term = extractTerm(postingList1);
         PostingList postingList_1 = new PostingList(postingList1);
@@ -354,6 +374,10 @@ public class Indexer {
         return term + ";" + PostingList.mergeLists(postingList_1, postingList_2);
     }
 
+    /**
+     * handle CapitalWord law. meaning checking collisions between similar words in dictionary.
+     * @param aTerm- word to check.
+     */
     private void handleCapitalWord(ATerm aTerm) {
         String term = aTerm.getTerm();
         String termLowerCase = term.toLowerCase();
@@ -376,6 +400,9 @@ public class Indexer {
         }
     }
 
+    /**
+     * Sorts and write dictionary to file dictionary in disk.
+     */
     private void sortAndWriteDictionaryToDisk() {
         String fileName;
         if(useStemming)
@@ -400,6 +427,11 @@ public class Indexer {
         }
     }
 
+    /**
+     * Adds input term to city index
+     * @param aTerm - city term to add to index.
+     * @param docID - document docId of city term to add to index.
+     */
     private void addToCityIndex(ATerm aTerm, int docID) {
         CityTerm cityTerm = (CityTerm) aTerm;
         List<CityPostingEntry> postingsList;
@@ -415,6 +447,9 @@ public class Indexer {
         postingsList.add(postingEntry);
     }
 
+    /**
+     * Resets vars for another use of the index in the current program run.
+     */
     private void resetIndex() {
         blockNum.set(0);
         tempInvertedIndex.clear();

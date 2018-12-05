@@ -2,17 +2,24 @@ package SearchEngineTools;
 
 import java.util.*;
 
+/**
+ * A class that represents a posting list by gaps between docId's.
+ */
 public class PostingList {
     private List<PostingEntry> postingList;
     private int lastDocId;
 
+    //<editor-fold desc="Constructors">
+    /**
+     * Default constructor.
+     */
     public PostingList() {
         postingList=new ArrayList<>();
     }
 
     /**
      * creates a posting list represented by docID (not gaps).
-     * @param postingList
+     * @param postingList- posting list represented in string.
      */
     public PostingList(String postingList){
         this.postingList=new ArrayList<>();
@@ -24,7 +31,13 @@ public class PostingList {
             this.postingList.add(new PostingEntry(lastDocId,Integer.parseInt(splitPostingList[i+1])));
         }
     }
+    //</editor-fold>
 
+    /**
+     * A static function that calculates and returns Last DocID in the input posting list.
+     * @param postingList- list to calculate on.
+     * @return- the Last DocID in the input posting list.
+     */
     public static int calculateLastDocID(String postingList) {
         String[] splitPostingList=postingList.split(" ");
         int lastDocId=0;
@@ -40,11 +53,12 @@ public class PostingList {
         return lastDocId;
     }
 
-    private void addAll(List<PostingEntry> other) {
-        for(PostingEntry postingEntry:other)
-            add(postingEntry);
-    }
 
+    /**
+     * Adds input posting entry to the posting list, and returns the difference from previous size.
+     * @param postingEntry- posting entry to add.
+     * @return - the difference from previous size.
+     */
     public int add(PostingEntry postingEntry) {
         if(postingList.isEmpty()){
             postingList.add(postingEntry);
@@ -55,13 +69,14 @@ public class PostingList {
             PostingEntry gapPostingEntry;
             int docId = postingEntry.getDocID();
             int termTF = postingEntry.getTermTF();
+
             if(docId>lastDocId){
                 gapPostingEntry=new PostingEntry(docId-lastDocId,termTF);
                 postingList.add(gapPostingEntry);
                 lastDocId=docId;
                 return gapPostingEntry.getSizeInBytes();
             }
-            else{
+            else{//docId<lastDocId
                 int currDocID=0;
                 int prevDocID=0;
                 PostingEntry currPostingEntry;
@@ -84,10 +99,12 @@ public class PostingList {
     }
 
     /**
-     * merge two posting lists represented by docID's to merged list represented by gaps.
-     * @param list1
-     * @param list2
-     * @return
+     * Merges two posting lists represented by docID's to merged list represented by gaps.
+     * merge done by linear merge.
+     *
+     * @param list1- list to merge.
+     * @param list2- list to merge.
+     * @return - the merged list.
      */
     public static PostingList mergeLists(PostingList list1,PostingList list2){
         PostingList mergedList=new PostingList();
@@ -111,10 +128,6 @@ public class PostingList {
         return mergedList;
     }
 
-    public int getLastDocId() {
-        return lastDocId;
-    }
-
     @Override
     public String toString() {
         String s="";
@@ -128,5 +141,10 @@ public class PostingList {
                 s+=" " + postingEntry;
         }
         return s;
+    }
+
+    private void addAll(List<PostingEntry> other) {
+        for(PostingEntry postingEntry:other)
+            add(postingEntry);
     }
 }
