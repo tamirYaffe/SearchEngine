@@ -2,17 +2,15 @@ package SearchEngineTools.ParsingTools.Term;
 
 import SearchEngineTools.ParsingTools.Parse;
 import eu.fayder.restcountries.v1.domain.Country;
-import eu.fayder.restcountries.v1.rest.CountryService;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class CityTerm extends WordTerm {
-    private Parse parse = new Parse();
+    protected static Parse parse;
     private ATerm statePopulation;
     private ATerm countryCurrency;
-    private List<Integer> positions;
     private Country country;
 
     /**
@@ -29,12 +27,13 @@ public class CityTerm extends WordTerm {
      * @param cityName cityName
      * @param country country of city
      */
-    public CityTerm(String cityName,Country country){
+    public CityTerm(String cityName, Country country){
         super(cityName);
+        parse = parse==null ? new Parse() : parse;
         this.country=country;
+        positions = new ArrayList<>();
         addPopulationTerm(country);
         addCurrency(country);
-        positions = new ArrayList<>();
         isNumber=false;
     }
 
@@ -85,21 +84,6 @@ public class CityTerm extends WordTerm {
         return countryCurrency.getTerm();
     }
 
-    /**
-     * add position of term in document
-     * @param position
-     */
-    public void addPosition(int position){
-        positions.add(position);
-    }
-
-    /**
-     * add all positions of other CityTerm
-     * @param other
-     */
-    public void addAllPositions(CityTerm other){
-        this.positions.addAll(other.positions);
-    }
 
     public boolean equals(Object o){
         if(o instanceof CityTerm){
@@ -111,6 +95,7 @@ public class CityTerm extends WordTerm {
 
 
     public String toString(){
+        List<Integer> positions = getPositions()==null ? new ArrayList<>() : getPositions();
         String toReturn ="CityTerm:"+getTerm()+"~"+"\nOccurences: "+(getOccurrences())+
                 "\nCountry: "+country.getName()+"\nPopulation size: "+getStatePopulation()+
                 "\nCurrency: "+getCountryCurrency()+"\nPositions:";

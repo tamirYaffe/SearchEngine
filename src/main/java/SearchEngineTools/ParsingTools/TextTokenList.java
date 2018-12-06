@@ -1,7 +1,5 @@
 package SearchEngineTools.ParsingTools;
 
-import java.util.List;
-
 public class TextTokenList extends DocumentTokenList {
 
 

@@ -3,7 +3,7 @@ package SearchEngineTools.ParsingTools.Term;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NumberTerm extends ATerm{
+public class NumberTerm extends ATerm {
 
 
     private List<Character> numberWithoutDecimal;
