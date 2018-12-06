@@ -568,6 +568,8 @@ public class Parse {
         String termString = term.getTerm();
         String upperCaseTermString = termString.toUpperCase();
         String lowerCaseTermString = termString.toLowerCase();
+        if(stopWords.contains(lowerCaseTermString))
+            return;
         boolean existsLowercase = occurrencesOfTerms.containsKey(lowerCaseTermString);
         boolean existsUppercase = occurrencesOfTerms.containsKey(upperCaseTermString);
 
