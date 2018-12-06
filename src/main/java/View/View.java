@@ -3,26 +3,21 @@ package View;
 import SearchEngineTools.Document;
 import SearchEngineTools.Indexer;
 import SearchEngineTools.ReadFile;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.util.Pair;
-
 import javax.swing.*;
-import java.awt.*;
 import java.io.*;
 import java.util.*;
-import java.util.List;
 
+/**
+ * A controller class for view.xml
+ */
 public class View {
     private Stage primaryStage;
     private ReadFile readFile;
@@ -45,11 +40,19 @@ public class View {
     public Menu menu_languages;
     public JTextArea jTextArea;
 
+    /**
+     * setter
+     * @param primaryStage
+     * @param indexer
+     */
     public void setParameters(Stage primaryStage, Indexer indexer) {
         this.primaryStage=primaryStage;
         this.indexer=indexer;
     }
 
+    /**
+     * Opens the file system for the user to choose the corpus path.
+     */
     public void onClickCorpusFileSystem(){
         actionAllButtons(true);
         String selectedDirectory=openFileSystem();
@@ -58,6 +61,9 @@ public class View {
         actionAllButtons(false);
     }
 
+    /**
+     * Opens the file system for the user to choose the posting files path.
+     */
     public void onClickPostingListFileSystem(){
         actionAllButtons(true);
         String selectedDirectory=openFileSystem();
@@ -66,6 +72,9 @@ public class View {
         actionAllButtons(false);
     }
 
+    /**
+     * Starting to index in a new thread.
+     */
     public void onClickStartIndex(){
         actionAllButtons(true);
         if(tf_corpusPath.getText().length()==0 || tf_postingListPath.getText().length()==0){
@@ -99,6 +108,8 @@ public class View {
         alert.setHeaderText(null);
         alert.setContentText("Please wait until buttons become enable again.");
         alert.showAndWait();
+
+        //wait for index to finish to activate all buttons.
         Thread thread=new Thread(()->{
             try {
                 runningIndex.join();
@@ -111,6 +122,10 @@ public class View {
         thread.start();
     }
 
+    /**
+     * Loads the dictionary from the input posting files path to the indexer memory.
+     * dictionary load is determine by the use stemming check box.
+     */
     public void onClickLoadDictionary(){
         actionAllButtons(true);
         Map<String, Pair<Integer,Integer>> dictionary=new HashMap<>();
@@ -135,6 +150,10 @@ public class View {
         actionAllButtons(false);
     }
 
+    /**
+     * Shows the dictionary to the user.
+     * dictionary showing is determine by the use stemming check box.
+     */
     public void onClickShowDictionary(){
         actionAllButtons(true);
         try {
@@ -160,6 +179,9 @@ public class View {
         actionAllButtons(false);
     }
 
+    /**
+     * Deletes all posting files and in memory program vars.
+     */
     public void onClickSDeleteAll(){
         actionAllButtons(true);
         System.out.println(indexer.getDictionarySize());
@@ -171,11 +193,15 @@ public class View {
         actionAllButtons(false);
     }
 
-    public void addLanguages() {
+
+
+    //private methods
+
+    /**
+     * Adds the corpus files languages to the menu.
+     */
+    private void addLanguages() {
         Collection<String>languages=readFile.getLanguages();
-        for (int i = 0; i < 50; i++) {
-            languages.add("english"+i);
-        }
         ArrayList<MenuItem>items=new ArrayList<>();
         for(String language:languages)
             items.add(new MenuItem(language));
@@ -183,8 +209,10 @@ public class View {
             menu_languages.getItems().addAll(items);
     }
 
-
-
+    /**
+     * Opens the file system and returns the user chosen path.
+     * @return
+     */
     private String openFileSystem(){
         DirectoryChooser directoryChooser = new DirectoryChooser();
         File selectedDirectory =
@@ -194,6 +222,10 @@ public class View {
         return selectedDirectory.getAbsolutePath();
     }
 
+    /**
+     * Disable or enable all buttons according to the input disable.
+     * @param disable- the action we wish to perform on the buttons.
+     */
     private void actionAllButtons(boolean disable){
         btn_corpusFileSystem.setDisable(disable);
         btn_postingListFileSystem.setDisable(disable);
@@ -206,6 +238,10 @@ public class View {
         tf_postingListPath.setDisable(disable);
     }
 
+    /**
+     * Displaying an error message for the user, with given msg.
+     * @param msg- the message we wish to present.
+     */
     private void displayErrorMessage(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error Dialog");
@@ -214,6 +250,9 @@ public class View {
         alert.showAndWait();
     }
 
+    /**
+     * Delete all posting files.
+     */
     private void deletePostingFiles() {
         String path=tf_postingListPath.getText();
         if(path.length()==0)
