@@ -1,11 +1,14 @@
 package View;
 
-import Controller.Controller;
 import SearchEngineTools.Document;
 import SearchEngineTools.Indexer;
 import SearchEngineTools.ReadFile;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -17,13 +20,10 @@ import javafx.util.Pair;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class View {
-    private Controller m_controller;
     private Stage primaryStage;
     private ReadFile readFile;
     private Indexer indexer;
@@ -42,11 +42,10 @@ public class View {
     public Button btn_loadDictionary;
     public Button btn_showDictionary;
     public Button btn_deleteAll;
-    public HBox hbox_bottom;
+    public Menu menu_languages;
     public JTextArea jTextArea;
 
-    public void setParameters(Controller controller, Stage primaryStage, Indexer indexer) {
-        this.m_controller=controller;
+    public void setParameters(Stage primaryStage, Indexer indexer) {
         this.primaryStage=primaryStage;
         this.indexer=indexer;
     }
@@ -106,6 +105,7 @@ public class View {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            addLanguages();
             actionAllButtons(false);
         });
         thread.start();
@@ -167,7 +167,20 @@ public class View {
         //readFile.clear();
         System.out.println(indexer.getDictionarySize());
         deletePostingFiles();
+        menu_languages.getItems().clear();
         actionAllButtons(false);
+    }
+
+    public void addLanguages() {
+        Collection<String>languages=readFile.getLanguages();
+        for (int i = 0; i < 50; i++) {
+            languages.add("english"+i);
+        }
+        ArrayList<MenuItem>items=new ArrayList<>();
+        for(String language:languages)
+            items.add(new MenuItem(language));
+        if(languages!=null)
+            menu_languages.getItems().addAll(items);
     }
 
 

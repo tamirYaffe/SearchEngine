@@ -315,6 +315,14 @@ public class ReadFile {
         stopWords.clear();
     }
 
+    /**
+     * Returns all the corpus documents languages.
+     * @return- all the corpus documents languages.
+     */
+    public Collection <String> getLanguages(){
+        return parse.getAllDocumentLanguages();
+    }
+
 }
 
 
