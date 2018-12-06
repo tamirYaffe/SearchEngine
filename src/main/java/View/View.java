@@ -166,6 +166,7 @@ public class View {
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
             jTextArea=new JTextArea();
             jTextArea.read(reader,null);
+            jTextArea.setEditable(false);
             JFrame frame = new JFrame("TextArea Load");
             frame.getContentPane().add( new JScrollPane(jTextArea));
             frame.pack();
