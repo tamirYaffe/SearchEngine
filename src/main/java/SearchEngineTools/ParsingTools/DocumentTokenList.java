@@ -3,10 +3,10 @@ package SearchEngineTools.ParsingTools;
 import SearchEngineTools.ParsingTools.Term.CityTerm;
 import eu.fayder.restcountries.v1.domain.Country;
 import eu.fayder.restcountries.v1.rest.CountryService;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class DocumentTokenList implements ITokenList {
 
@@ -179,7 +179,7 @@ public class DocumentTokenList implements ITokenList {
             }
         }
         if(foundCity){
-            cityTerm = new CityTerm(cityName,country);
+            cityTerm = new CityTerm(cityName.toUpperCase(),country);
         }
     }
 

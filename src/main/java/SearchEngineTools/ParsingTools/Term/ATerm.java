@@ -7,7 +7,7 @@ public abstract class ATerm  implements Comparable<ATerm>{
 
     private int occurrences=0;
     protected String term;
-    private List<Integer> positions;
+    protected List<Integer> positions;
     protected boolean isNumber;
 
     /**
@@ -96,4 +96,14 @@ public abstract class ATerm  implements Comparable<ATerm>{
     public boolean isNumber(){
         return isNumber;
     }
+
+    /**
+     * add position of term in document
+     * @param position
+     */
+    public void addPosition(int position){
+        positions.add(position);
+    }
+
+
 }

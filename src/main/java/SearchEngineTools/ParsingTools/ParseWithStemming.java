@@ -8,11 +8,20 @@ public class ParseWithStemming extends Parse {
 
     private Stemmer stemmer;
 
+    /**
+     * Constructor for the ParseWithStemming Class.
+     * Parse that stems words before returning them.
+     */
     public ParseWithStemming(){
         super();
         stemmer = new Stemmer();
     }
 
+    /**
+     *Constructor for the ParseWithStemming Class.
+     *Parse that stems words before returning them.
+     * @param stopWords words to ignore when stemming
+     */
     public ParseWithStemming(List<String> stopWords){
         super(stopWords);
         stemmer = new Stemmer();
