@@ -204,10 +204,11 @@ public class View {
     private void addLanguages() {
         Collection<String>languages=readFile.getLanguages();
         ArrayList<MenuItem>items=new ArrayList<>();
+        if(languages==null)
+            return;
         for(String language:languages)
             items.add(new MenuItem(language));
-        if(languages!=null)
-            menu_languages.getItems().addAll(items);
+        menu_languages.getItems().addAll(items);
     }
 
     /**
