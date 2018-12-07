@@ -21,6 +21,7 @@ public class DocumentTokenList implements ITokenList {
     private CityTerm cityTerm;
     private CountryService countryService = CountryService.getInstance();
     private String docLanguage = null;
+    private boolean foundFirstTextLine=false;
 
 
     Collection<Character> delimitersToSplitWordBy;
@@ -119,28 +120,47 @@ public class DocumentTokenList implements ITokenList {
      */
     protected String getNextTextLine() {
         if(isText){
-            currentLine = documentLines.remove(0);
-            if(currentLine.contains("Language: <F P=105>")){
-                setDocLanguage(currentLine);
-                return getNextTextLine();
+            //find first actual line of text
+            while (!foundFirstTextLine && !documentLines.isEmpty()){
+                currentLine = documentLines.remove(0);
+                if(currentLine.contains("<F P=105>")){
+                    setDocLanguage(currentLine);
+                    continue;
+                }
+                else if(currentLine.contains("<F P=104>")){
+                    extractCityTerm(currentLine);
+                    continue;
+                }
+                else if(currentLine.contains("<F P=") || currentLine.contains("Article Type:")){
+                    continue;
+                }
+                else if(currentLine.equals("</TEXT>")){
+                    isText = false;
+                    String nextLine = getNextTextLine();
+                    return nextLine;
+                }
+                else {
+                    foundFirstTextLine=true;
+                    return currentLine;
+                }
             }
-            if(currentLine.contains("Article Type:BFN"))
-                return getNextTextLine();
-            if(currentLine.equals("</TEXT>")){
+            //return first actual line of text
+            currentLine = documentLines.remove(0);
+            //if done with text
+             if(currentLine.equals("</TEXT>")){
                 isText = false;
                 String nextLine = getNextTextLine();
                 return nextLine;
-            }
-            else
-                return currentLine;
+             }
+             return currentLine;
         }
         else {
-            if(currentLine!=null && currentLine.contains("Language: <F P=105>")){
-                setDocLanguage(currentLine);
-                return getNextTextLine();
-            }
             while (!documentLines.isEmpty() && !isText){
                 currentLine = documentLines.remove(0);
+                if(currentLine!=null && currentLine.contains("Language: <F P=105>")){
+                    setDocLanguage(currentLine);
+                    return getNextTextLine();
+                }
                 if(currentLine.contains("<F P=104>")) {
                     extractCityTerm(currentLine);
                     continue;
@@ -256,6 +276,7 @@ public class DocumentTokenList implements ITokenList {
         this.isText=false;
         this.documentLines=null;
         this.cityTerm=null;
+        foundFirstTextLine=false;
     }
 
     @Override
