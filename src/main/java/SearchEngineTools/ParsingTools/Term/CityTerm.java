@@ -113,4 +113,7 @@ public class CityTerm extends WordTerm {
         return country.getName();
     }
 
+    public String getTerm(){
+        return this.term.toUpperCase();
+    }
 }
