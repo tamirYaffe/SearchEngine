@@ -206,25 +206,48 @@ public class Parse {
     public Collection<ATerm> parseDocument(List<String> document){
         if(tokenList==null)
             tokenList = new DocumentTokenList();
+        //initialize datastructures
         tokenList.initialize(document,currencySymbols,delimitersToSplitWordBy,uniqueStopWords);
-        List<String> cityNames = new ArrayList<>();
-        CityTerm documentCity = tokenList.getCityTerm();
         Map<String, ATerm> occurrencesAndPositionsOfTerms = new HashMap<>();
+        //get all terms in document and their occurrences
+        addAllTermsToOccurrancesOfTerms(occurrencesAndPositionsOfTerms,tokenList);
+        //get document language and city
         String documentLanguage = tokenList.getDocLanguage();
         addDocumentLanguage(documentLanguage);
-        if(documentCity!=null) {
-            String cityTerm = documentCity.getTerm();
-            cityNames.add(cityTerm);
-            occurrencesAndPositionsOfTerms.put(documentCity.getTerm(),documentCity);
-        }
-        setCityNames(cityNames);
-        Collection<ATerm> toReturn = parse(tokenList,occurrencesAndPositionsOfTerms);
+        CityTerm documentCity = tokenList.getCityTerm();
+        getDocCity(documentCity,occurrencesAndPositionsOfTerms);
+        //get final collection of terms
+        Collection<ATerm> toReturn = getFinalTermCollection(occurrencesAndPositionsOfTerms);
+        //clear tokenlist
         tokenList.clear();
-        this.cityNames=null;
+        //return terms
         return toReturn;
 
     }
 
+    private void getDocCity(CityTerm documentCityTerm,Map<String, ATerm> occurrencesAndPositionsOfTerms){
+        if(documentCityTerm==null)
+            return;
+        String cityName = documentCityTerm.getTerm().toLowerCase();
+        boolean addedCityTerm = addCityNameToOccurrencesMap(documentCityTerm,cityName,occurrencesAndPositionsOfTerms);
+        if(addedCityTerm)
+            return;
+        cityName=cityName.toUpperCase();
+        addedCityTerm = addCityNameToOccurrencesMap(documentCityTerm,cityName,occurrencesAndPositionsOfTerms);
+        if(addedCityTerm)
+            return;
+        occurrencesAndPositionsOfTerms.put(documentCityTerm.getTerm(),documentCityTerm);
+    }
+
+    private boolean addCityNameToOccurrencesMap(CityTerm cityTerm,String cityTermCandidateName,Map<String, ATerm> occurrencesAndPositionsOfTerms){
+        if(occurrencesAndPositionsOfTerms.keySet().contains(cityTermCandidateName)){
+            ATerm term = occurrencesAndPositionsOfTerms.remove(cityTermCandidateName);
+            cityTerm.addPositions(term);
+            occurrencesAndPositionsOfTerms.put(cityTerm.getTerm(),cityTerm);
+            return true;
+        }
+        return false;
+    }
     public Collection<String> getAllDocumentLanguages(){
         return allDocumentLanguages;
     }
@@ -246,7 +269,6 @@ public class Parse {
      */
     public Collection<ATerm> parseText(List<String> text){
         TextTokenList tokenList = new TextTokenList();
-        cityNames=new ParsingHashMap();
         tokenList.initialize(text,currencySymbols,delimitersToSplitWordBy,uniqueStopWords);
         return parse(tokenList);
     }
@@ -268,7 +290,7 @@ public class Parse {
      * @param occurrencesAndPositionsOfTerms
      * @return
      */
-    private Collection<ATerm> parse(ITokenList tokenList, Map<String, ATerm> occurrencesAndPositionsOfTerms){
+    protected Collection<ATerm> parse(ITokenList tokenList, Map<String, ATerm> occurrencesAndPositionsOfTerms){
         addAllTermsToOccurrancesOfTerms(occurrencesAndPositionsOfTerms,tokenList);
         Collection<ATerm> toReturn = getFinalTermCollection(occurrencesAndPositionsOfTerms);
         return toReturn;
@@ -280,7 +302,7 @@ public class Parse {
      * @param occurrencesOfTerms
      * @return
      */
-    private static Collection<ATerm> getFinalTermCollection(Map<String, ATerm> occurrencesOfTerms) {
+    protected Collection<ATerm> getFinalTermCollection(Map<String, ATerm> occurrencesOfTerms) {
         ArrayList<ATerm> toReturn = new ArrayList<>(occurrencesOfTerms.size());
         for (String termString:occurrencesOfTerms.keySet()) {
             ATerm term = occurrencesOfTerms.get(termString);
@@ -288,6 +310,7 @@ public class Parse {
         }
         return toReturn;
     }
+
 
     /**
      * Adds all terms and their occurrences to list
@@ -522,7 +545,7 @@ public class Parse {
      * @param term term to add
      * @param occurrencesList map to add to
      */
-    private void addTermToOccurrencesList(ATerm term, Map<String, ATerm> occurrencesList){
+    protected void addTermToOccurrencesList(ATerm term, Map<String, ATerm> occurrencesList){
         if(term instanceof WordTerm){
             addWordTermToOccurrencesList((WordTerm) term,occurrencesList,Character.isLowerCase(term.getTerm().charAt(0)));
         }
@@ -679,10 +702,10 @@ public class Parse {
             addTermToOccurrencesList(nextTerm,occurrencesOfTerms);
             return;
         }
-        //check city
+        /*//check city
         boolean isCity = createCityTerm(token,occurrencesOfTerms,tokens);
         if(isCity)
-            return;
+            return;*/
 
         //split word by non numbers and letter
         List<ATerm> toAdd = getFinalWordTermList(token,tokens);
@@ -796,7 +819,8 @@ public class Parse {
         List<Token> tokensToAdd = new ArrayList<>();
 
         for (Pair<Integer,Integer> substring:desiredSubstrings) {
-            Token tokenToAdd = new Token(s.substring(substring.getKey(),substring.getValue()),position);
+            String tokenString = s.substring(substring.getKey(),substring.getValue());
+            Token tokenToAdd = new Token(tokenString,position);
             if(tokenToAdd!= null)
                 tokensToAdd.add(tokenToAdd);
         }
@@ -807,9 +831,9 @@ public class Parse {
 
     protected WordTerm createWordTerm(Token token) {
         String tokenString = token.getTokenString();
-        boolean necessary = !(tokenString==null || tokenString.length()<=0 && stopWords.contains(tokenString));
+        boolean necessary = !(tokenString==null || tokenString.length()<=0 && stopWords.contains(tokenString.toLowerCase()));
         if(necessary)
-            return new WordTerm(tokenString);
+            return new WordTerm(token);
         return null;
     }
 

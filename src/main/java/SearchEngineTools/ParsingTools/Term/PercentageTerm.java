@@ -10,6 +10,10 @@ public class PercentageTerm extends NumberTerm {
         super(term);
     }
 
+    /**
+     * Call super method to create number, add percentage sign
+     * @return
+     */
     @Override
     protected String createTerm() {
         return super.createTerm()+"%";

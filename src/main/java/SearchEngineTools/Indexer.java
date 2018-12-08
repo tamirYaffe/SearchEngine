@@ -91,9 +91,9 @@ public class Indexer {
 
             //add or update dictionary.
             if (!dictionary.containsKey(term)) {
-                dictionary.put(term, new Pair<>(1, -1));
+                dictionary.put(term, new Pair<>(termOccurrences, -1));
             } else
-                dictionary.replace(term, new Pair<>(dictionary.get(term).getKey() + 1, -1));
+                dictionary.replace(term, new Pair<>(dictionary.get(term).getKey() + termOccurrences, -1));
 
             //add or update temp inverted index.
             PostingList postingsList;
@@ -406,9 +406,9 @@ public class Indexer {
     private void sortAndWriteDictionaryToDisk() {
         String fileName;
         if(useStemming)
-            fileName="dictionaryStemming.txt";
+            fileName="dictionaryStemming.csv";
         else
-            fileName="dictionary.txt";
+            fileName="dictionary.csv";
         String pathName = postingFilesPath + fileSeparator + fileName;
         File file = new File(pathName);
         try (FileWriter fw = new FileWriter(file);
@@ -418,7 +418,7 @@ public class Indexer {
             Collections.sort(keys);
             for (String key : keys) {
                 Pair<Integer, Integer> dictionaryPair = dictionary.get(key);
-                bw.write(key + ":" + dictionaryPair.getKey());
+                bw.write(key + "," + dictionaryPair.getKey());
                 bw.newLine();
             }
 

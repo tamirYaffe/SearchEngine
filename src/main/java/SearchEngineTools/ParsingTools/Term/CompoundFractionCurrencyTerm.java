@@ -4,6 +4,7 @@ public class CompoundFractionCurrencyTerm extends CurrencyTerm {
 
     private FractionTerm fraction;
 
+
     /**
      * Constructor of compound currency term
      * @param compoundFractionTerm
@@ -11,6 +12,7 @@ public class CompoundFractionCurrencyTerm extends CurrencyTerm {
      */
     public CompoundFractionCurrencyTerm(CompoundFractionTerm compoundFractionTerm, String currency){
         super(compoundFractionTerm.getWholeNumber(), currency);
+        addPositions(compoundFractionTerm);
         this.fraction = new FractionTerm(compoundFractionTerm.getNumerator(), compoundFractionTerm.getDenominator());
     }
 

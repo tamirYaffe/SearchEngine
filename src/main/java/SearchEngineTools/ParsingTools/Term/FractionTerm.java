@@ -22,6 +22,7 @@ public class FractionTerm extends ATerm {
         this.numerator = numerator;
         this.denominator = denominator;
         isNumber = true;
+        addPositions(numerator);
     }
 
 

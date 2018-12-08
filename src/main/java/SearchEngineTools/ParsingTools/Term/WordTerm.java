@@ -1,13 +1,19 @@
 package SearchEngineTools.ParsingTools.Term;
 
+import SearchEngineTools.ParsingTools.Token;
+
 public class WordTerm extends ATerm {
 
+    public WordTerm(Token token){
+        this(token.getTokenString());
+        this.addPosition(token.getPosition());
+    }
 
     /**
      * Construct WordTerm from string
      * @param term
      */
-    public WordTerm(String term){
+    protected WordTerm(String term){
         this.term=term;
         removePunctuation();
         isNumber=false;
@@ -42,6 +48,9 @@ public class WordTerm extends ATerm {
     }
 
 
+    /**
+     * remove punctuation
+     */
     private void removePunctuation(){
         if(term==null || term.length()<=1)
             return;
