@@ -1,8 +1,8 @@
 package View;
 
-import SearchEngineTools.Document;
-import SearchEngineTools.Indexer;
-import SearchEngineTools.ReadFile;
+import Model.Model;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Menu;
@@ -18,13 +18,12 @@ import java.util.*;
 /**
  * A controller class for view.xml
  */
-public class View {
+public class View implements Observer{
     private Stage primaryStage;
-    private ReadFile readFile;
-    private Indexer indexer;
     private String fileSeparator=System.getProperty("file.separator");
     private boolean useStemming=false;
-    private Thread runningIndex;
+    private Model model;
+
 
 
     //fxml widgets
@@ -40,15 +39,17 @@ public class View {
     public Menu menu_languages;
     public JTextArea jTextArea;
 
-    /**
-     * setter
-     * @param primaryStage
-     * @param indexer
-     */
-    public void setParameters(Stage primaryStage, Indexer indexer) {
+
+
+    //<editor-fold desc="Setters">
+    public void setStage(Stage primaryStage) {
         this.primaryStage=primaryStage;
-        this.indexer=indexer;
     }
+
+    public void setModel(Model model) {
+        this.model = model;
+    }
+    //</editor-fold>
 
     /**
      * Opens the file system for the user to choose the corpus path.
@@ -72,54 +73,41 @@ public class View {
         actionAllButtons(false);
     }
 
+
+
     /**
      * Starting to index in a new thread.
      */
     public void onClickStartIndex(){
         actionAllButtons(true);
+        //check errors
         if(tf_corpusPath.getText().length()==0 || tf_postingListPath.getText().length()==0){
             displayErrorMessage("Add path to input corpus and output posting files");
             actionAllButtons(false);
             return;
         }
-        runningIndex=new Thread(()->{
-            String corpusPath=tf_corpusPath.getText();
-            String postingFilesPath=tf_postingListPath.getText();
-            if(cb_useStemming.isSelected())
-                useStemming=true;
-            Document.setUseStemming(useStemming);
-            indexer.setPostingFilesPath(postingFilesPath);
-            indexer.setIsStemming(useStemming);
-            readFile=new ReadFile(indexer, corpusPath,postingFilesPath,useStemming);
-            readFile.deletePrevFiles();
-            long startTime = System.nanoTime();
-            int numOfFiles=readFile.listAllFiles();
-            indexer.writeCityIndex();
-            long endTime = System.nanoTime();
-            long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-
-            //need to change
-            System.out.println("seconds: "+duration/1000000000);
-            System.out.println(numOfFiles);
-        });
-        runningIndex.start();
+        if(cb_useStemming.isSelected())
+            useStemming=true;
+        else
+            useStemming=false;
+        Task<Void> task = new Task<Void>() {
+            @Override
+            public Void call() {
+                String msg=model.startIndex(tf_corpusPath.getText(),tf_postingListPath.getText(),useStemming);
+                Platform.runLater(()->{
+                    displayEndOfRunMessage(msg);
+                });
+                return null;
+            }
+        };
+        Thread startIndex=new Thread(task);
+        startIndex.setDaemon(true);
+        startIndex.start();
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Started Indexing...");
         alert.setHeaderText(null);
         alert.setContentText("Please wait until buttons become enable again.");
         alert.showAndWait();
-
-        //wait for index to finish to activate all buttons.
-        Thread thread=new Thread(()->{
-            try {
-                runningIndex.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            addLanguages();
-            actionAllButtons(false);
-        });
-        thread.start();
     }
 
     /**
@@ -145,8 +133,7 @@ public class View {
             displayErrorMessage("load failed");
         }
         //load dictionary to index dictionary
-        indexer.setDictionary(dictionary);
-        System.out.println("dictionary lodad");
+        model.loadDictionary(dictionary);
         actionAllButtons(false);
     }
 
@@ -185,10 +172,7 @@ public class View {
      */
     public void onClickSDeleteAll(){
         actionAllButtons(true);
-        System.out.println(indexer.getDictionarySize());
-        indexer.clear();
-        //readFile.clear();
-        System.out.println(indexer.getDictionarySize());
+        model.deleteAll();
         deletePostingFiles();
         menu_languages.getItems().clear();
         actionAllButtons(false);
@@ -202,7 +186,7 @@ public class View {
      * Adds the corpus files languages to the menu.
      */
     private void addLanguages() {
-        Collection<String>languages=readFile.getLanguages();
+        Collection<String>languages=model.getLanguages();
         ArrayList<MenuItem>items=new ArrayList<>();
         if(languages==null)
             return;
@@ -252,6 +236,14 @@ public class View {
         alert.showAndWait();
     }
 
+    private void displayEndOfRunMessage(String msg) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Finished indexing!");
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+        alert.showAndWait();
+    }
+
     /**
      * Delete all posting files.
      */
@@ -265,4 +257,10 @@ public class View {
                 file.delete();
     }
 
+    @Override
+    public void update(Observable o, Object arg) {
+        addLanguages();
+        actionAllButtons(false);
+
+    }
 }

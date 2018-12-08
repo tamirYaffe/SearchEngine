@@ -1,5 +1,6 @@
 package View;
 
+import Model.Model;
 import SearchEngineTools.Indexer;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -8,7 +9,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class Main extends Application {
-
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Search Engine");
@@ -17,9 +17,12 @@ public class Main extends Application {
         Scene scene = new Scene(root, 500, 400);
         primaryStage.setScene(scene);
         //--------------
+        Model model = new Model();
         View view = fxmlLoader.getController();
-        Indexer indexer = new Indexer(1048576 * 10);
-        view.setParameters(primaryStage,indexer);
+        model.addObserver(view);
+        view.setStage(primaryStage);
+        view.setModel(model);
+
         //--------------
         primaryStage.show();
     }
