@@ -18,6 +18,7 @@ public class CompoundFractionTerm extends FractionTerm {
      */
     public CompoundFractionTerm(NumberTerm whole, FractionTerm fractionTerm){
         super(fractionTerm.getNumerator(),fractionTerm.getDenominator());
+        addPositions(whole);
         this.whole = whole;
     }
 

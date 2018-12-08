@@ -120,8 +120,28 @@ public class DocumentTokenList implements ITokenList {
      */
     protected String getNextTextLine() {
         if(isText){
+            currentLine = documentLines.remove(0);
+            if(currentLine.contains("<F P=104>")) {
+                extractCityTerm(currentLine);
+                return getNextTextLine();
+            }
+            if(currentLine.contains("<F P=105>")) {
+                setDocLanguage(currentLine);
+                return getNextTextLine();
+            }
+            if((currentLine.contains("<F P=") && currentLine.contains("</F>"))|| currentLine.contains("Article Type:")) {
+                return getNextTextLine();
+            }
+            if(currentLine.equals("</TEXT>")){
+                isText = false;
+                String nextLine = getNextTextLine();
+                return nextLine;
+            }
+            else
+                return currentLine;
+
             //find first actual line of text
-            while (!foundFirstTextLine && !documentLines.isEmpty()){
+            /*while (!foundFirstTextLine && !documentLines.isEmpty()){
                 currentLine = documentLines.remove(0);
                 if(currentLine.contains("<F P=105>")){
                     setDocLanguage(currentLine);
@@ -152,7 +172,7 @@ public class DocumentTokenList implements ITokenList {
                 String nextLine = getNextTextLine();
                 return nextLine;
              }
-             return currentLine;
+             return currentLine;*/
         }
         else {
             while (!documentLines.isEmpty() && !isText){

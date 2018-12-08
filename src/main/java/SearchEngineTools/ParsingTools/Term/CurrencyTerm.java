@@ -16,6 +16,7 @@ public class CurrencyTerm extends ATerm {
         this.numberTerm = numberTerm;
         this.currency = currency;
         isNumber=true;
+        addPositions(numberTerm);
     }
 
     /**

@@ -1,5 +1,7 @@
 package SearchEngineTools.ParsingTools.Term;
 
+import SearchEngineTools.ParsingTools.Token;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,8 +25,13 @@ public class NumberTerm extends ATerm {
         this.isNegative=other.isNegative;
         this.term = null;
         isNumber=true;
+        addPositions(other);
     }
 
+    public NumberTerm (Token token){
+        this(token.getTokenString());
+        this.addPosition(token.getPosition());
+    }
     /**
      * Construct NumberTerm from String
      * @param s String to Construct NumberTerms From

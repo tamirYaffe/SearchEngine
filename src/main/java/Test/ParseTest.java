@@ -2,6 +2,7 @@ package Test;
 
 import Controller.Controller;
 import SearchEngineTools.ParsingTools.Parse;
+import SearchEngineTools.ParsingTools.ParseThatDoesntBreakUpWords;
 import SearchEngineTools.ParsingTools.ParseWithStemming;
 import SearchEngineTools.ParsingTools.Term.ATerm;
 import javafx.application.Application;
@@ -20,12 +21,13 @@ import java.util.List;
 
 public class ParseTest extends Application {
 
-    private static Parse parser = new Parse();
+    private static Parse parser = new ParseThatDoesntBreakUpWords();
     public static Stage primaryStage;
     public javafx.scene.control.Button btn_Parse;
     public javafx.scene.control.CheckBox CheckBox_AllowStemming;
     public javafx.scene.control.TextArea textArea_ToParse;
     public javafx.scene.control.TextArea textArea_Results;
+    public javafx.scene.control.TextArea text_area_cityName;
     Controller view;
     Toolkit toolkit = Toolkit.getDefaultToolkit();
 
@@ -41,10 +43,18 @@ public class ParseTest extends Application {
         String sTextToParse = textArea_ToParse.getText();
         String[] saTextToParse = sTextToParse.split("\n");
         List<String> lsTextToParse = new ArrayList<>(saTextToParse.length);
+        String cityName = text_area_cityName.getText();
+        cityName = cityName==null ? "" : cityName;
+        cityName = "<F P=104> "+cityName+" </F>";
+        lsTextToParse.add(cityName);
+        lsTextToParse.add("jibrish");
+        lsTextToParse.add("<TEXT>");
         for (int i = 0; i < saTextToParse.length; i++) {
             lsTextToParse.add(saTextToParse[i]);
         }
-        Collection<ATerm> parseResults = parser.parseText(lsTextToParse);
+        lsTextToParse.add("</TEXT>");
+        lsTextToParse.add("random");
+        Collection<ATerm> parseResults = parser.parseDocument(lsTextToParse);
         StringBuilder resultsToDisplay = new StringBuilder();
         for (ATerm term:parseResults) {
             resultsToDisplay.append(term.toString()).append("\n");
