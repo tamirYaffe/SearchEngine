@@ -249,6 +249,8 @@ public class Parse {
         return false;
     }
     public Collection<String> getAllDocumentLanguages(){
+        if(allDocumentLanguages==null)
+            return new ArrayList<>();
         return allDocumentLanguages;
     }
     private void addDocumentLanguage(String language){
