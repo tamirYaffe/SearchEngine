@@ -32,7 +32,6 @@ public class Model extends Observable {
         indexer.setIsStemming(useStemming);
 
         readFile = new ReadFile(indexer, corpusPath, postingFilesPath, useStemming);
-        readFile.deletePrevFiles();
         long startTime = System.nanoTime();
         numOfDocs = readFile.listAllFiles();
         indexer.writeCityIndex();
@@ -44,7 +43,7 @@ public class Model extends Observable {
         notifyObservers();
         return "number of documents indexed: " + numOfDocs+System.getProperty("line.separator")
                 +"number of unique terms in corpus: " + numOfTerms+System.getProperty("line.separator")
-                +"index runtime: " + lastRunTime;
+                +"index runtime in seconds: " + lastRunTime;
     }
 
     public void loadDictionary(Map<String, Pair<Integer, Integer>> dictionary) {
