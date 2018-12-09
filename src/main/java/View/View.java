@@ -90,6 +90,7 @@ public class View implements Observer{
             useStemming=true;
         else
             useStemming=false;
+        deletePostingFiles(useStemming);
         Task<Void> task = new Task<Void>() {
             @Override
             public Void call() {
@@ -173,7 +174,8 @@ public class View implements Observer{
     public void onClickSDeleteAll(){
         actionAllButtons(true);
         model.deleteAll();
-        deletePostingFiles();
+        deletePostingFiles(true);
+        deletePostingFiles(false);
         menu_languages.getItems().clear();
         actionAllButtons(false);
     }
@@ -247,14 +249,22 @@ public class View implements Observer{
     /**
      * Delete all posting files.
      */
-    private void deletePostingFiles() {
+    private void deletePostingFiles(boolean useStemming) {
         String path=tf_postingListPath.getText();
         if(path.length()==0)
             return;
         File dir = new File(path);
-        for (File file : dir.listFiles())
-            if (!file.isDirectory())
-                file.delete();
+        if(!useStemming) {
+            for (File file : dir.listFiles())
+                if (!file.isDirectory())
+                    file.delete();
+        }
+        else {
+            for (File file : dir.listFiles())
+                if (!file.isDirectory() && file.getName().contains("Stemming"))
+                    file.delete();
+        }
+
     }
 
     @Override

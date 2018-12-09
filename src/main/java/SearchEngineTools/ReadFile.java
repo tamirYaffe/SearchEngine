@@ -7,7 +7,6 @@ import javafx.util.Pair;
 import sun.awt.Mutex;
 import org.apache.commons.io.FileUtils;
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,6 +51,10 @@ public class ReadFile {
         else
             parse = new Parse();
         this.useStemming=useStemming;
+        File directory = new File("blocks");
+        if (! directory.exists()){
+            directory.mkdir();
+        }
     }
 
     /**
@@ -91,6 +94,7 @@ public class ReadFile {
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+        deletePrevFiles();
         return numOfDocs;
     }
 
@@ -267,9 +271,11 @@ public class ReadFile {
      */
     public static void deletePrevFiles() {
         File dir = new File("blocks");
-        for (File file : dir.listFiles())
+        for (File file : dir.listFiles()){
             if (!file.isDirectory())
                 file.delete();
+        }
+        dir.delete();
     }
 
     /**
