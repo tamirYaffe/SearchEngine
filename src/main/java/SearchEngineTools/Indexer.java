@@ -83,6 +83,8 @@ public class Indexer {
             if (aTerm instanceof CityTerm) {
                 document.setDocCity(term);
                 addToCityIndex(aTerm, docID);
+                if(aTerm.getOccurrences()==0)
+                    continue;
             }
             int termOccurrences = aTerm.getOccurrences();
             document.updateDocInfo(termOccurrences);
