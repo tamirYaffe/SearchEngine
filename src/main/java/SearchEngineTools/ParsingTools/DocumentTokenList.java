@@ -262,7 +262,17 @@ public class DocumentTokenList implements ITokenList {
     private void setDocLanguage(String currentLine){
         currentLine = currentLine.substring(19);
         int indexOfTag = currentLine.indexOf(("</F>"));
-        currentLine = currentLine.substring(0,indexOfTag);
+        indexOfTag = indexOfTag==-1 ? currentLine.length()-1 : indexOfTag;
+        try {
+            if (currentLine.length() == 0) {
+                return;
+            }
+            currentLine = currentLine.substring(0, indexOfTag);
+
+        }
+        catch (Exception e){
+            System.out.println("error:"+currentLine+indexOfTag);;
+        }
         currentLine = removeUnnecessaryChars(currentLine);
         docLanguage = currentLine;
     }
@@ -388,4 +398,6 @@ public class DocumentTokenList implements ITokenList {
     public CityTerm getCityTerm() {
         return cityTerm;
     }
+
+
 }

@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  * A class used for reading the corpus and starting parse and index process.
  */
 public class ReadFile {
-    private static int numOfDocs;
+    private int numOfDocs;
     private Parse parse;
     private Indexer indexer;
     private HashSet<String> stopWords = new HashSet<>();
@@ -59,6 +59,7 @@ public class ReadFile {
      * @return- number of docs in the corpus.
      */
     public int listAllFiles() {
+        numOfDocs=0;
         String path = corpusPath;
         createStopWords(path);
         Document.corpusPath = path;
